@@ -4,6 +4,8 @@ my personal flight history as a fog-of-world map. The world starts dark. Every c
 
 Inspired by [Fog of World](https://fogofworld.app/) and [Flighty](https://flighty.com/).
 
+![Flight Fog — 3D Globe](flight_globe.png)
+
 ---
 
 ## How It Works
@@ -23,10 +25,12 @@ Inspired by [Fog of World](https://fogofworld.app/) and [Flighty](https://flight
 All flights live in a single CSV:
 
 ```csv
-date,origin_city,origin_country,dest_city,dest_country,
+date,origin_city,origin_country,dest_city,dest_country,transfer
 ```
 
-The repo ships with 63 pre-loaded segments (2008–2026) covering China, USA, UK, Spain, Cyprus, Brazil, Germany, France, Netherlands, Ireland, Thailand, Qatar, and Hong Kong. These are a compilation from my passport stamps, emails,  inferred and from memory.
+`transfer=1` marks a row where the destination is a transit hub (Doha, Istanbul, Amsterdam, etc.) rather than a true visited city — used to differentiate glowing destination dots from dimmer hub dots on the map.
+
+The repo ships with 101 flight segments (2008–2026) across 13 countries, 20 destination cities, and 6 transit hubs. Routes are compiled from passport stamps, booking emails, and inference.
 
 ---
 

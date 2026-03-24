@@ -16,7 +16,7 @@ Flight Fog is a personal flight history visualizer inspired by Fog of World and 
 - Dark theme is the default and primary design. The fog IS darkness — light theme is a nice-to-have, not a priority.
 
 ## Tech Stack
-
+- Python
 - React + Vite
 - Three.js (3D globe)
 - D3.js + topojson (2D flat map)
