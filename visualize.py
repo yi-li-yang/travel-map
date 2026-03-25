@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.collections import LineCollection
 import numpy as np
+import matplotlib.patheffects as pe
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
@@ -28,7 +29,7 @@ DPI = 200
 
 BG_COLOR     = "#0a0a1a"
 LAND_COLOR   = "#1e293b"
-COAST_COLOR  = "#0f172a"
+COAST_COLOR  = "#2a3a4e"
 ARC_COLOR    = "#06b6d4"       # cyan
 CITY_COLOR   = "#f59e0b"       # amber
 TEXT_COLOR   = "#e2e8f0"
@@ -303,7 +304,7 @@ def draw(flights, world_polys):
           f"{stats['cities']} cities")
 
     fig = plt.figure(figsize=(FIG_W, FIG_H), facecolor=BG_COLOR)
-    ax  = fig.add_axes([0.01, 0.13, 0.70, 0.84])   # main map
+    ax  = fig.add_axes([0.01, 0.13, 0.74, 0.84])   # main map
     ax.set_facecolor(BG_COLOR)
     ax.set_xlim(-180, 180)
     ax.set_ylim(-75, 85)          # crop Antarctica, show more north
@@ -335,7 +336,7 @@ def draw(flights, world_polys):
             xs = [c[0] for c in ring]
             ys = [c[1] for c in ring]
             ax.fill(xs, ys, color=LAND_COLOR, linewidth=0, zorder=1)
-            ax.plot(xs, ys, color=COAST_COLOR, linewidth=0.4, zorder=2)
+            ax.plot(xs, ys, color=COAST_COLOR, linewidth=0.5, zorder=2)
 
     # ── Flight arcs ──
     # count duplicate routes for thickness
@@ -350,18 +351,17 @@ def draw(flights, world_polys):
         pts = great_circle_points(lat1, lon1, lat2, lon2, n=80)
         key = tuple(sorted([f["origin"], f["dest"]]))
         repeats = route_count.get(key, 1)
-        lw = 0.8 + min(repeats - 1, 6) * 0.2
+        # Line width scales with distance (primary) + repeat routes (bonus)
+        lw = 0.45 + min(f["dist_km"] / 2800, 3.2) + min(repeats - 1, 4) * 0.18
         for seg in split_antimeridian(pts):
             if len(seg) < 2:
                 continue
             xs = [p[1] for p in seg]
             ys = [p[0] for p in seg]
-            # outer glow
-            ax.plot(xs, ys, color=ARC_COLOR, lw=lw*5, alpha=0.03, zorder=3, solid_capstyle="round")
-            # inner glow
-            ax.plot(xs, ys, color=ARC_COLOR, lw=lw*2, alpha=0.12, zorder=4, solid_capstyle="round")
-            # main arc
-            ax.plot(xs, ys, color=ARC_COLOR, lw=lw, alpha=0.65, zorder=5, solid_capstyle="round")
+            # soft glow halo
+            ax.plot(xs, ys, color=ARC_COLOR, lw=lw*3.5, alpha=0.06, zorder=3, solid_capstyle="round")
+            # main arc — solid, clean
+            ax.plot(xs, ys, color=ARC_COLOR, lw=lw, alpha=0.85, zorder=5, solid_capstyle="round")
 
     # ── City glow dots (destination vs transfer hub) ──
     dest_cities, hub_cities = {}, {}
@@ -379,30 +379,52 @@ def draw(flights, world_polys):
 
     HUB_COLOR = "#818cf8"   # soft indigo — distinct from amber cities and cyan arcs
 
-    # Transfer hubs — hollow ring, clearly less prominent than destinations
+    # Label offsets (dx_deg, dy_deg, ha) for every city in CITIES dict
+    CITY_LABEL_OFFSETS = {
+        "edinburgh": (-2.5,  1.8, "right"), "london":    (-2.5, -2.5, "right"),
+        "dublin":    (-3.0,  1.5, "right"), "stockholm": ( 2.5,  1.5, "left"),
+        "amsterdam": ( 2.5,  1.8, "left"),  "paris":     ( 2.5, -2.5, "left"),
+        "frankfurt": ( 2.5,  1.5, "left"),  "munich":    ( 2.5, -2.5, "left"),
+        "zurich":    (-2.5, -2.5, "right"), "alicante":  (-2.5, -2.0, "right"),
+        "valencia":  (-2.5,  1.8, "right"), "limassol":  ( 2.5,  1.5, "left"),
+        "paphos":    (-2.5, -2.5, "right"), "istanbul":  ( 2.5,  1.5, "left"),
+        "cairo":     ( 2.5, -2.5, "left"),  "doha":      ( 2.5, -2.0, "left"),
+        "chengdu":   (-2.5,  1.5, "right"), "beijing":   ( 2.5,  1.5, "left"),
+        "shanghai":  ( 2.5, -2.5, "left"),  "hong kong": ( 2.5, -2.5, "left"),
+        "bangkok":   ( 2.5,  1.5, "left"),  "chiang mai":(-2.5,  1.5, "right"),
+        "singapore": ( 2.5, -2.5, "left"),  "new york":  (-2.5,  1.5, "right"),
+        "washington d.c.": (-2.5, -3.0, "right"),
+        "chicago":       (-2.5,  1.5, "right"), "atlanta":     (-2.5, -2.5, "right"),
+        "houston":       (-2.5,  1.5, "right"), "los angeles": (-2.5,  1.8, "right"),
+        "san francisco": (-2.5,  1.5, "right"), "san diego":   (-2.5, -2.5, "right"),
+        "rio de janeiro": (2.5,  1.5, "left"),  "sao paulo":   ( 2.5, -2.5, "left"),
+    }
+    DISPLAY_NAMES = {
+        "sao paulo": "São Paulo",      "rio de janeiro": "Rio de Janeiro",
+        "washington d.c.": "Washington D.C.", "chiang mai": "Chiang Mai",
+        "hong kong": "Hong Kong",      "san francisco": "San Francisco",
+        "los angeles": "Los Angeles",  "san diego": "San Diego",
+        "new york": "New York",
+    }
+
+    # Text halo for label readability over land/arcs
+    _halo = [pe.withStroke(linewidth=2.5, foreground=BG_COLOR)]
+
+    # Transfer hubs — hollow ring + muted label
     for city, info in hub_cities.items():
         lat, lon = info["coords"]
         ax.scatter(lon, lat, s=300, color=HUB_COLOR, alpha=0.07, zorder=6, linewidths=0)
         ax.scatter(lon, lat, s=70,  facecolors="none", edgecolors=HUB_COLOR,
                    alpha=0.80, zorder=7, linewidths=1.3)
         ax.scatter(lon, lat, s=8,   color=HUB_COLOR, alpha=0.75, zorder=8, linewidths=0)
+        key = normalize(city)
+        dx, dy, ha = CITY_LABEL_OFFSETS.get(key, (2.5, 1.5, "left"))
+        label = DISPLAY_NAMES.get(key, city.title())
+        ax.text(lon + dx, lat + dy, label, fontsize=4.5, color=HUB_COLOR,
+                ha=ha, va="center", fontfamily="monospace", alpha=0.65, zorder=13,
+                clip_on=True, path_effects=_halo)
 
-    # city labels for prominent cities
-    LABELS = {
-        "Edinburgh":    ( 3,  3, "right"),
-        "Chengdu":      ( 3,  3, "left"),
-        "London":       (-4, -8, "right"),
-        "New York":     ( 3,  3, "left"),
-        "Bangkok":      ( 3,  3, "left"),
-        "Hong Kong":    ( 3, -7, "left"),
-        "Beijing":      ( 3,  3, "left"),
-        "Los Angeles":  ( 3,  3, "right"),
-        "Rio de Janeiro":( 3, 3, "left"),
-        "Singapore":    ( 3,  3, "left"),
-        "Chiangmai":    ( 3,  3, "left"),
-    }
-
-    # Destination cities — bright amber glow
+    # Destination cities — bright amber glow + label every city
     for city, info in dest_cities.items():
         lat, lon = info["coords"]
         c = info["count"]
@@ -411,25 +433,64 @@ def draw(flights, world_polys):
         ax.scatter(lon, lat, s=150*size_scale, color=CITY_COLOR, alpha=0.10, zorder=10, linewidths=0)
         ax.scatter(lon, lat, s=40*size_scale,  color=CITY_COLOR, alpha=0.45, zorder=11, linewidths=0)
         ax.scatter(lon, lat, s=10,             color=CITY_COLOR, alpha=1.0,  zorder=12, linewidths=0)
-
-        if city in LABELS:
-            dx, dy, ha = LABELS[city]
-            ax.annotate(city, xy=(lon, lat), xytext=(lon + dx*0.5, lat + dy*0.3),
-                        fontsize=5.5, color=TEXT2_COLOR, ha=ha, va="center",
-                        fontfamily="monospace", zorder=13, annotation_clip=True)
+        key = normalize(city)
+        dx, dy, ha = CITY_LABEL_OFFSETS.get(key, (2.5, 1.5, "left"))
+        label = DISPLAY_NAMES.get(key, city.title())
+        ax.text(lon + dx, lat + dy, label, fontsize=5.0, color=TEXT2_COLOR,
+                ha=ha, va="center", fontfamily="monospace", alpha=0.85, zorder=13,
+                clip_on=True, path_effects=_halo)
 
     # star for home base Edinburgh
     elat, elon, _ = CITIES["edinburgh"]
     ax.scatter(elon, elat, s=120, color=CITY_COLOR, alpha=1.0, zorder=14,
                marker="*", linewidths=0)
 
+    # ── Countries panel (right-side empty Pacific space) ──
+    # Only destination countries (same logic as compute_stats)
+    _real = set()
+    _hub_only = set()
+    for f in flights:
+        _real.add(f["origin"])
+        if f["is_transfer"]:
+            _hub_only.add(f["dest"])
+        else:
+            _real.add(f["dest"])
+    _real -= _hub_only
+    dest_countries = set()
+    for _c in _real:
+        _cc = lookup_country(_c)
+        if _cc:
+            dest_countries.add(_cc)
+    sorted_ctry = sorted(dest_countries)
+    n_ctry = len(sorted_ctry)
+
+    # Panel at lon ~149, lat 60 downward, step 4.2° per row
+    px, py0, pstep = 149.0, 60.0, 4.2
+    box_h = n_ctry * pstep + 4.5
+    # Semi-opaque panel background with subtle border
+    ax.add_patch(mpatches.FancyBboxPatch(
+        (px - 2.0, py0 - box_h + 1.0), 20.0, box_h + 4.0,
+        boxstyle="round,pad=0.6", linewidth=0.4, edgecolor="#334155",
+        facecolor="#0d1117", alpha=0.88, zorder=17))
+    # Amber accent line on the left of the panel
+    ax.plot([px - 1.2, px - 1.2], [py0 + 2.5, py0 - box_h + 2.5],
+            color=CITY_COLOR, lw=1.2, alpha=0.45, zorder=18)
+    # Title
+    ax.text(px, py0 + 2.2, f"{n_ctry} COUNTRIES",
+            fontsize=6.5, color=CITY_COLOR, ha="left", va="bottom",
+            fontfamily="monospace", fontweight="bold", alpha=0.90, zorder=20)
+    for i, country in enumerate(sorted_ctry):
+        lat = py0 - i * pstep
+        ax.scatter(px + 0.3, lat, s=22, color=CITY_COLOR, alpha=0.85,
+                   zorder=21, linewidths=0)
+        ax.text(px + 2.2, lat, country, fontsize=7, color=TEXT2_COLOR,
+                va="center", ha="left", fontfamily="monospace", alpha=0.88, zorder=20,
+                path_effects=_halo)
+
     # ── Stats panel (right sidebar) ──
-    sx = fig.add_axes([0.72, 0.13, 0.28, 0.84])
+    sx = fig.add_axes([0.76, 0.13, 0.24, 0.84])
     sx.set_facecolor("#0d1117")
     sx.axis("off")
-
-    # thin left border accent
-    sx.axvline(0.0, color=CITY_COLOR, lw=1.5, alpha=0.4)
 
     def stat(y, label, value, sub=None):
         # Label — small caps, sits tight above the value
@@ -501,7 +562,7 @@ def draw(flights, world_polys):
     years = sorted(by_year)
     yr_min, yr_max = min(years), max(years)
 
-    bx = fig.add_axes([0.01, 0.01, 0.70, 0.10])
+    bx = fig.add_axes([0.01, 0.01, 0.74, 0.10])
     bx.set_facecolor(BG_COLOR)
     bx.axis("off")
 
@@ -511,13 +572,17 @@ def draw(flights, world_polys):
         cnt = by_year.get(yr, 0)
         if cnt > 0:
             alpha = 0.35 + 0.65 * (cnt / max_cnt)
-            bx.bar(i, cnt, color=CITY_COLOR, alpha=alpha, width=0.75, bottom=0,
+            bx.bar(i, cnt, color=CITY_COLOR, alpha=alpha, width=0.72, bottom=0,
                    linewidth=0)
+            # count label on top of bar
+            bx.text(i, cnt + 0.18, str(cnt), ha="center", va="bottom",
+                    fontsize=4.5, color=CITY_COLOR, alpha=alpha * 0.8,
+                    fontfamily="monospace", fontweight="bold")
         else:
-            bx.bar(i, 0.15, color="#1e293b", alpha=0.6, width=0.75, bottom=0,
+            bx.bar(i, 0.15, color="#1e293b", alpha=0.6, width=0.72, bottom=0,
                    linewidth=0)
-        label = str(yr) if yr % 2 == 0 else str(yr)[-2:]
-        bx.text(i, -0.25, str(yr), ha="center", va="top",
+        yr_label = str(yr) if yr % 2 == 0 else f"'{str(yr)[-2:]}"
+        bx.text(i, -0.25, yr_label, ha="center", va="top",
                 fontsize=5.2, color=TEXT2_COLOR if cnt else "#374151",
                 fontfamily="monospace")
 
@@ -531,16 +596,16 @@ def draw(flights, world_polys):
     # fill the bottom-right gap (sidebar only covers y=0.13–0.97; below that is figure bg)
     import matplotlib.patches as mpatches2
     fig.patches.append(mpatches2.Rectangle(
-        (0.72, 0.0), 0.28, 0.13, transform=fig.transFigure,
+        (0.76, 0.0), 0.24, 0.13, transform=fig.transFigure,
         facecolor="#0d1117", linewidth=0, zorder=0))
 
     # thin separators
     import matplotlib.lines as mlines
     fig.add_artist(mlines.Line2D(
-        [0.01, 0.71], [0.12, 0.12], transform=fig.transFigure,
+        [0.01, 0.75], [0.12, 0.12], transform=fig.transFigure,
         color="#1e293b", linewidth=0.8))
     fig.add_artist(mlines.Line2D(
-        [0.72, 0.72], [0.0, 1.0], transform=fig.transFigure,
+        [0.76, 0.76], [0.0, 1.0], transform=fig.transFigure,
         color="#1e293b", linewidth=0.8))
 
     plt.savefig(OUTPUT, dpi=DPI, bbox_inches="tight", pad_inches=0.05,

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import matplotlib.font_manager as fm; [print\\(f\\) for f in fm.findSystemFonts\\(\\) if ''Emoji'' in f or ''emoji'' in f]\")",
+      "Read(//tmp/**)",
+      "Read(//private/tmp/**)",
+      "Bash(python3 -c \":*)"
+    ]
+  }
+}

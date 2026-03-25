@@ -25,7 +25,7 @@ Inspired by [Fog of World](https://fogofworld.app/) and [Flighty](https://flight
 All flights live in a single CSV:
 
 ```csv
-date,origin_city,origin_country,dest_city,dest_country,transfer
+year,origin_city,transfer_city,dest_city
 ```
 
 `transfer=1` marks a row where the destination is a transit hub (Doha, Istanbul, Amsterdam, etc.) rather than a true visited city — used to differentiate glowing destination dots from dimmer hub dots on the map.
