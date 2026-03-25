@@ -34,38 +34,43 @@ CITY_COLOR   = "#f59e0b"       # amber
 TEXT_COLOR   = "#e2e8f0"
 TEXT2_COLOR  = "#94a3b8"
 
-# ── City coordinates (airport lat/lng) ───────────────────────────────────────
+# ── City coordinates (lat, lon, country) ─────────────────────────────────────
 
 CITIES = {
-    "edinburgh":      (55.9533,  -3.1883),
-    "london":         (51.4700,  -0.4543),
-    "chengdu":        (30.5728, 104.0668),
-    "beijing":        (39.9042, 116.4074),
-    "hong kong":      (22.3080, 113.9185),
-    "new york":       (40.6413, -73.7781),
-    "houston":        (29.9902, -95.3368),
-    "los angeles":    (33.9425,-118.4081),
-    "san diego":      (32.7338,-117.1933),
-    "atlanta":        (33.6407, -84.4277),
-    "chicago":        (41.9742, -87.9073),
-    "washington dc":  (38.9531, -77.4565),
-    "alicante":       (38.2822,  -0.5580),
-    "valencia":       (39.4893,  -0.4816),
-    "limassol":       (34.8721,  33.6226),
-    "paphos":         (34.7180,  32.4857),
-    "dublin":         (53.4213,  -6.2700),
-    "amsterdam":      (52.3105,   4.7683),
-    "paris":          (48.8566,   2.3522),
-    "frankfurt":      (50.0379,   8.5622),
-    "munich":         (48.3538,  11.7861),
-    "zurich":         (47.4647,   8.5492),
-    "bangkok":        (13.6900, 100.7501),
-    "doha":           (25.2732,  51.6080),
-    "rio de janeiro": (-22.8090,-43.2436),
-    "sao paulo":      (-23.4356,-46.4731),
-    "istanbul":       (41.2608,  28.7418),
-    "singapore":      ( 1.3644, 103.9915),
-    "chiangmai":      (18.7669,  98.9628),
+    # (lat, lon, country)
+    "edinburgh":        (55.9533,  -3.1883, "UK"),
+    "london":           (51.4700,  -0.4543, "UK"),
+    "chengdu":          (30.5728, 104.0668, "China"),
+    "beijing":          (39.9042, 116.4074, "China"),
+    "shanghai":         (31.1443, 121.8083, "China"),
+    "hong kong":        (22.3080, 113.9185, "Hong Kong"),
+    "new york":         (40.6413, -73.7781, "USA"),
+    "houston":          (29.9902, -95.3368, "USA"),
+    "los angeles":      (33.9425,-118.4081, "USA"),
+    "san francisco":    (37.6213,-122.3790, "USA"),
+    "san diego":        (32.7338,-117.1933, "USA"),
+    "atlanta":          (33.6407, -84.4277, "USA"),
+    "chicago":          (41.9742, -87.9073, "USA"),
+    "washington d.c.":  (38.9531, -77.4565, "USA"),
+    "alicante":         (38.2822,  -0.5580, "Spain"),
+    "valencia":         (39.4893,  -0.4816, "Spain"),
+    "limassol":         (34.8721,  33.6226, "Cyprus"),
+    "paphos":           (34.7180,  32.4857, "Cyprus"),
+    "dublin":           (53.4213,  -6.2700, "Ireland"),
+    "amsterdam":        (52.3105,   4.7683, "Netherlands"),
+    "paris":            (48.8566,   2.3522, "France"),
+    "frankfurt":        (50.0379,   8.5622, "Germany"),
+    "munich":           (48.3538,  11.7861, "Germany"),
+    "zurich":           (47.4647,   8.5492, "Switzerland"),
+    "stockholm":        (59.6519,  17.9186, "Sweden"),
+    "cairo":            (30.1219,  31.4056, "Egypt"),
+    "bangkok":          (13.6900, 100.7501, "Thailand"),
+    "chiang mai":       (18.7669,  98.9628, "Thailand"),
+    "singapore":        ( 1.3644, 103.9915, "Singapore"),
+    "doha":             (25.2732,  51.6080, "Qatar"),
+    "istanbul":         (41.2608,  28.7418, "Turkey"),
+    "rio de janeiro":   (-22.8090,-43.2436, "Brazil"),
+    "sao paulo":        (-23.4356,-46.4731, "Brazil"),
 }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -78,7 +83,16 @@ def normalize(name: str) -> str:
 
 def lookup(name: str):
     key = normalize(name)
-    return CITIES.get(key)
+    entry = CITIES.get(key)
+    if entry:
+        return entry[0], entry[1]   # lat, lon
+    return None
+
+
+def lookup_country(name: str):
+    key = normalize(name)
+    entry = CITIES.get(key)
+    return entry[2] if entry else None
 
 
 def haversine(lat1, lon1, lat2, lon2) -> float:
@@ -159,64 +173,123 @@ def load_world():
 # ── Load flights ──────────────────────────────────────────────────────────────
 
 def load_flights():
-    flights = []
+    """
+    CSV schema: year, origin_city, transfer_city, dest_city
+    Each row becomes 1 arc segment (no transfer) or 2 arc segments (with transfer).
+    is_transfer=True marks that the destination of that segment is a hub stop.
+    """
+    segments = []
     csv_path = os.path.join(os.path.dirname(__file__), "flight_history.csv")
     with open(csv_path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            o = lookup(row["origin_city"])
-            d = lookup(row["dest_city"])
-            if not o or not d:
-                print(f"  Skipping unknown city: {row['origin_city']} / {row['dest_city']}")
-                continue
             try:
-                year = int(row["date"].split("/")[0])
-            except Exception:
+                year = int(row["year"])
+            except (KeyError, ValueError):
                 continue
-            flights.append({
-                "origin":        row["origin_city"],
-                "dest":          row["dest_city"],
-                "origin_country":row["origin_country"],
-                "dest_country":  row["dest_country"],
-                "origin_coords": o,
-                "dest_coords":   d,
-                "dist_km":       haversine(*o, *d),
-                "year":          year,
-                "is_transfer":   row.get("transfer","").strip() == "1",
-            })
-    return flights
+
+            origin   = row["origin_city"].strip()
+            transfer = row.get("transfer_city", "").strip()
+            dest     = row["dest_city"].strip()
+
+            o_coords = lookup(origin)
+            d_coords = lookup(dest)
+
+            if not o_coords:
+                print(f"  Unknown city: {origin}")
+                continue
+            if not d_coords:
+                print(f"  Unknown city: {dest}")
+                continue
+
+            if transfer:
+                t_coords = lookup(transfer)
+                if not t_coords:
+                    print(f"  Unknown transfer city: {transfer}")
+                    # fall back to direct arc
+                    segments.append({
+                        "origin": origin, "dest": dest,
+                        "origin_coords": o_coords, "dest_coords": d_coords,
+                        "dist_km": haversine(*o_coords, *d_coords),
+                        "year": year, "is_transfer": False,
+                    })
+                else:
+                    # leg 1: origin → transfer hub
+                    segments.append({
+                        "origin": origin, "dest": transfer,
+                        "origin_coords": o_coords, "dest_coords": t_coords,
+                        "dist_km": haversine(*o_coords, *t_coords),
+                        "year": year, "is_transfer": True,
+                    })
+                    # leg 2: transfer hub → destination
+                    segments.append({
+                        "origin": transfer, "dest": dest,
+                        "origin_coords": t_coords, "dest_coords": d_coords,
+                        "dist_km": haversine(*t_coords, *d_coords),
+                        "year": year, "is_transfer": False,
+                    })
+            else:
+                segments.append({
+                    "origin": origin, "dest": dest,
+                    "origin_coords": o_coords, "dest_coords": d_coords,
+                    "dist_km": haversine(*o_coords, *d_coords),
+                    "year": year, "is_transfer": False,
+                })
+    return segments
 
 
 # ── Stats ─────────────────────────────────────────────────────────────────────
 
 def compute_stats(flights):
-    total_km   = sum(f["dist_km"] for f in flights)
-    countries  = {f["origin_country"] for f in flights} | {f["dest_country"] for f in flights}
-    cities     = {f["origin"] for f in flights} | {f["dest"] for f in flights}
-    hours      = sum(f["dist_km"] / 850 + 0.5 for f in flights)
-    by_year    = {}
+    total_km = sum(f["dist_km"] for f in flights)
+    hours    = sum(f["dist_km"] / 850 + 0.5 for f in flights)
+
+    # Real destination cities only (exclude transfer hubs)
+    real_cities = set()
+    hub_cities  = set()
+    for f in flights:
+        real_cities.add(f["origin"])
+        if f["is_transfer"]:
+            hub_cities.add(f["dest"])
+        else:
+            real_cities.add(f["dest"])
+    real_cities -= hub_cities  # cities that appear only as hubs stay out
+
+    # Countries via CITIES lookup
+    countries = set()
+    for city in real_cities:
+        c = lookup_country(city)
+        if c:
+            countries.add(c)
+
+    by_year = {}
     for f in flights:
         by_year[f["year"]] = by_year.get(f["year"], 0) + 1
-    busiest    = max(by_year, key=by_year.get)
-    longest    = max(flights, key=lambda f: f["dist_km"])
+    busiest = max(by_year, key=by_year.get)
+
+    longest = max(flights, key=lambda f: f["dist_km"])
+
     city_counts = {}
-    for f in flights:
-        city_counts[f["origin"]] = city_counts.get(f["origin"], 0) + 1
-        city_counts[f["dest"]]   = city_counts.get(f["dest"], 0) + 1
-    top_city   = max(city_counts, key=city_counts.get)
+    for city in real_cities:
+        city_counts[city] = sum(
+            1 for f in flights
+            if f["origin"] == city or (f["dest"] == city and not f["is_transfer"])
+        )
+    top_city = max(city_counts, key=city_counts.get)
+
     return {
-        "total_flights":   len(flights),
-        "total_km":        total_km,
-        "earth_laps":      total_km / 40075,
-        "hours":           hours,
-        "countries":       len(countries),
-        "cities":          len(cities),
-        "busiest_year":    busiest,
-        "busiest_count":   by_year[busiest],
-        "longest_route":   f"{longest['origin']} → {longest['dest']}",
-        "longest_km":      longest["dist_km"],
-        "top_city":        top_city,
-        "top_city_count":  city_counts[top_city],
+        "total_flights":  len(flights),
+        "total_km":       total_km,
+        "earth_laps":     total_km / 40075,
+        "hours":          hours,
+        "countries":      len(countries),
+        "cities":         len(real_cities),
+        "busiest_year":   busiest,
+        "busiest_count":  by_year[busiest],
+        "longest_route":  f"{longest['origin']} → {longest['dest']}",
+        "longest_km":     longest["dist_km"],
+        "top_city":       top_city,
+        "top_city_count": city_counts[top_city],
     }
 
 
@@ -236,6 +309,25 @@ def draw(flights, world_polys):
     ax.set_ylim(-75, 85)          # crop Antarctica, show more north
     ax.set_aspect("equal")
     ax.axis("off")
+
+    # ── Coordinate tick labels (professional cartography look) ──
+    for lat in range(-60, 91, 30):
+        label = f"{abs(lat)}°{'N' if lat >= 0 else 'S'}"
+        ax.text(-179, lat, label, fontsize=4.5, color=TEXT2_COLOR,
+                alpha=0.35, va="center", ha="left", fontfamily="monospace")
+    for lon in range(-150, 181, 30):
+        label = f"{abs(lon)}°{'E' if lon >= 0 else 'W'}"
+        ax.text(lon, -73, label, fontsize=4.5, color=TEXT2_COLOR,
+                alpha=0.35, va="bottom", ha="center", fontfamily="monospace")
+
+    # ── Graticule (lat/lon grid) ──
+    graticule_color = "#ffffff"
+    for lat in range(-60, 91, 30):
+        ax.axhline(lat, color=graticule_color, lw=0.25, alpha=0.07, zorder=0, linestyle="-")
+    for lon in range(-180, 181, 30):
+        ax.axvline(lon, color=graticule_color, lw=0.25, alpha=0.07, zorder=0, linestyle="-")
+    # equator slightly more visible
+    ax.axhline(0, color=graticule_color, lw=0.4, alpha=0.12, zorder=0)
 
     # ── World polygons ──
     for rings in world_polys:
@@ -285,14 +377,15 @@ def draw(flights, world_polys):
             dest_cities[c] = dest_cities.get(c, {"coords": f["dest_coords"], "count": 0})
             dest_cities[c]["count"] += 1
 
-    HUB_COLOR = "#64748b"
+    HUB_COLOR = "#818cf8"   # soft indigo — distinct from amber cities and cyan arcs
 
-    # Transfer hubs — small dim dots
+    # Transfer hubs — hollow ring, clearly less prominent than destinations
     for city, info in hub_cities.items():
         lat, lon = info["coords"]
-        ax.scatter(lon, lat, s=40,  color=HUB_COLOR, alpha=0.15, zorder=6, linewidths=0)
-        ax.scatter(lon, lat, s=10,  color=HUB_COLOR, alpha=0.50, zorder=7, linewidths=0)
-        ax.scatter(lon, lat, s=3,   color="#94a3b8",  alpha=0.80, zorder=8, linewidths=0)
+        ax.scatter(lon, lat, s=300, color=HUB_COLOR, alpha=0.07, zorder=6, linewidths=0)
+        ax.scatter(lon, lat, s=70,  facecolors="none", edgecolors=HUB_COLOR,
+                   alpha=0.80, zorder=7, linewidths=1.3)
+        ax.scatter(lon, lat, s=8,   color=HUB_COLOR, alpha=0.75, zorder=8, linewidths=0)
 
     # city labels for prominent cities
     LABELS = {
@@ -326,7 +419,7 @@ def draw(flights, world_polys):
                         fontfamily="monospace", zorder=13, annotation_clip=True)
 
     # star for home base Edinburgh
-    elat, elon = CITIES["edinburgh"]
+    elat, elon, _ = CITIES["edinburgh"]
     ax.scatter(elon, elat, s=120, color=CITY_COLOR, alpha=1.0, zorder=14,
                marker="*", linewidths=0)
 
@@ -339,39 +432,67 @@ def draw(flights, world_polys):
     sx.axvline(0.0, color=CITY_COLOR, lw=1.5, alpha=0.4)
 
     def stat(y, label, value, sub=None):
+        # Label — small caps, sits tight above the value
         sx.text(0.12, y, label.upper(),
-                transform=sx.transAxes, fontsize=7, color=TEXT2_COLOR,
-                fontfamily="monospace", va="top", alpha=0.8)
-        sx.text(0.12, y - 0.050, value,
-                transform=sx.transAxes, fontsize=17, color=TEXT_COLOR,
+                transform=sx.transAxes, fontsize=6.5, color=TEXT2_COLOR,
+                fontfamily="monospace", va="top", alpha=0.65)
+        # Value — large, immediately below label
+        sx.text(0.12, y - 0.026, value,
+                transform=sx.transAxes, fontsize=15, color=TEXT_COLOR,
                 fontweight="bold", va="top")
+        # Sub-note — tight below value
         if sub:
-            sx.text(0.12, y - 0.098, sub,
-                    transform=sx.transAxes, fontsize=8, color=TEXT2_COLOR,
-                    va="top", alpha=0.7)
+            sx.text(0.12, y - 0.062, sub,
+                    transform=sx.transAxes, fontsize=7.5, color=TEXT2_COLOR,
+                    va="top", alpha=0.65)
 
-    sx.text(0.12, 0.98, "FLIGHT FOG",
-            transform=sx.transAxes, fontsize=15, color=CITY_COLOR,
+    sx.text(0.12, 0.975, "YILI'S FLIGHT MAP",
+            transform=sx.transAxes, fontsize=13, color=CITY_COLOR,
             fontweight="bold", fontfamily="monospace", va="top", alpha=0.95)
-    sx.text(0.12, 0.925, "personal flight history  2008 – 2026",
-            transform=sx.transAxes, fontsize=8, color=TEXT2_COLOR, va="top", alpha=0.7)
+    sx.text(0.12, 0.920, "personal flight history  2008 – 2026",
+            transform=sx.transAxes, fontsize=7.5, color=TEXT2_COLOR, va="top", alpha=0.7)
 
     # divider
-    sx.axhline(0.88, color="#1e293b", lw=0.8)
+    sx.axhline(0.900, color="#1e293b", lw=0.8)
 
-    stat(0.855, "Total Flights",   f"{stats['total_flights']}")
-    stat(0.745, "Total Distance",  f"{stats['total_km']:,.0f} km",
-         f"{stats['earth_laps']:.1f}×  Earth circumference")
-    stat(0.625, "Time in Air",     f"{int(stats['hours'])} h",
+    # 8 stat blocks evenly spaced from 0.885 down — step = 0.09
+    # bottom block sub ends at ~0.193, leaving room for legend + provenance
+    stat(0.885, "Total Flights",   f"{stats['total_flights']}")
+    stat(0.795, "Total Distance",  f"{stats['total_km']:,.0f} km",
+         f"{stats['earth_laps']:.1f}× Earth circumference")
+    stat(0.705, "Time in Air",     f"{int(stats['hours'])} h",
          f"≈ {stats['hours']/24:.0f} days aloft")
-    stat(0.515, "Countries",       f"{stats['countries']}")
-    stat(0.415, "Cities",          f"{stats['cities']}")
-    stat(0.315, "Busiest Year",    f"{stats['busiest_year']}",
+    stat(0.615, "Countries",       f"{stats['countries']}")
+    stat(0.525, "Cities",          f"{stats['cities']}")
+    stat(0.435, "Busiest Year",    f"{stats['busiest_year']}",
          f"{stats['busiest_count']} flights that year")
-    stat(0.205, "Longest Flight",  f"{stats['longest_km']:,.0f} km",
+    stat(0.345, "Longest Flight",  f"{stats['longest_km']:,.0f} km",
          stats['longest_route'])
-    stat(0.095, "Most Visited",    stats['top_city'],
+    stat(0.255, "Most Visited",    stats['top_city'],
          f"{stats['top_city_count']} appearances")
+
+    # ── Legend ──
+    sx.axhline(0.175, color="#1e293b", lw=0.6, alpha=0.8)
+    sx.scatter([0.14], [0.155], s=20, color=CITY_COLOR, alpha=0.9,
+               transform=sx.transAxes, zorder=10, linewidths=0, clip_on=False)
+    sx.text(0.22, 0.155, "destination city", transform=sx.transAxes,
+            fontsize=6, color=TEXT2_COLOR, va="center", alpha=0.65)
+    sx.scatter([0.14], [0.132], s=18, facecolors="none", edgecolors=HUB_COLOR,
+               alpha=0.80, transform=sx.transAxes, zorder=10, linewidths=0.9, clip_on=False)
+    sx.text(0.22, 0.132, "transfer / layover", transform=sx.transAxes,
+            fontsize=6, color=TEXT2_COLOR, va="center", alpha=0.65)
+
+    # ── Data provenance ──
+    sx.axhline(0.110, color="#1e293b", lw=0.4, alpha=0.5)
+    provenance = (
+        "Data: historical flights recovered by cross-referencing\n"
+        "passport stamps & email confirmations. Future flights\n"
+        "tracked automatically via Claude AI (email parsing).\n"
+        "Stats computed by Claude AI."
+    )
+    sx.text(0.12, 0.100, provenance,
+            transform=sx.transAxes, fontsize=5.5, color=TEXT2_COLOR,
+            va="top", alpha=0.4, linespacing=1.6)
 
     # ── Bottom year bar chart ──
     by_year = {}
@@ -407,6 +528,12 @@ def draw(flights, world_polys):
     bx.text(-0.5, max_cnt * 0.5, "YEAR", va="center", ha="right",
             fontsize=5.5, color=TEXT2_COLOR, fontfamily="monospace", alpha=0.5)
 
+    # fill the bottom-right gap (sidebar only covers y=0.13–0.97; below that is figure bg)
+    import matplotlib.patches as mpatches2
+    fig.patches.append(mpatches2.Rectangle(
+        (0.72, 0.0), 0.28, 0.13, transform=fig.transFigure,
+        facecolor="#0d1117", linewidth=0, zorder=0))
+
     # thin separators
     import matplotlib.lines as mlines
     fig.add_artist(mlines.Line2D(
@@ -416,7 +543,7 @@ def draw(flights, world_polys):
         [0.72, 0.72], [0.0, 1.0], transform=fig.transFigure,
         color="#1e293b", linewidth=0.8))
 
-    plt.savefig(OUTPUT, dpi=DPI, bbox_inches="tight",
+    plt.savefig(OUTPUT, dpi=DPI, bbox_inches="tight", pad_inches=0.05,
                 facecolor=BG_COLOR, edgecolor="none")
     print(f"  Saved → {OUTPUT}")
     plt.close(fig)

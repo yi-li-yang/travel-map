@@ -1,102 +1,68 @@
-date,origin_city,origin_country,dest_city,dest_country,transfer
-2008/7/13,Chengdu,China,New York,USA,
-2008/8/15,Houston,USA,Chengdu,China,
-2013/8/20,Chengdu,China,Beijing,China,1
-2013/8/21,Beijing,China,Edinburgh,UK,
-2013/10/26,Edinburgh,UK,Beijing,China,
-2014/1/5,Beijing,China,Edinburgh,UK,
-2014/2/15,Edinburgh,UK,Alicante,Spain,
-2014/2/22,Alicante,Spain,Edinburgh,UK,
-2014/6/14,Edinburgh,UK,Doha,Qatar,1
-2014/6/15,Doha,Qatar,Chengdu,China,
-2014/9/1,Chengdu,China,Doha,Qatar,1
-2014/9/2,Doha,Qatar,Edinburgh,UK,
-2014/12/20,Edinburgh,UK,New York,USA,
-2015/1/6,New York,USA,London,UK,
-2015/4/13,Edinburgh,UK,Limassol,Cyprus,
-2015/4/20,Paphos,Cyprus,Edinburgh,UK,
-2015/6/1,Edinburgh,UK,Amsterdam,Netherlands,1
-2015/6/1,Amsterdam,Netherlands,Chengdu,China,
-2015/8/20,Chengdu,China,Amsterdam,Netherlands,1
-2015/8/21,Amsterdam,Netherlands,Edinburgh,UK,
-2017/1/17,Edinburgh,UK,Istanbul,Turkey,1
-2017/1/18,Istanbul,Turkey,Chengdu,China,
-2017/2/18,Chengdu,China,Istanbul,Turkey,1
-2017/2/19,Istanbul,Turkey,Edinburgh,UK,
-2017/4/20,Edinburgh,UK,Rio de Janeiro,Brazil,
-2017/4/28,Rio de Janeiro,Brazil,London,UK,
-2017/5/1,Edinburgh,UK,Doha,Qatar,1
-2017/5/2,Doha,Qatar,Chengdu,China,
-2017/6/17,Chengdu,China,Doha,Qatar,1
-2017/6/18,Doha,Qatar,Edinburgh,UK,
-2017/11/6,Edinburgh,UK,Chicago,USA,
-2017/11/12,Chicago,USA,Edinburgh,UK,
-2017/11/14,Edinburgh,UK,Dublin,Ireland,
-2017/11/16,Dublin,Ireland,Edinburgh,UK,
-2017/12/12,Edinburgh,UK,Doha,Qatar,1
-2017/12/13,Doha,Qatar,Chengdu,China,
-2018/1/14,Chengdu,China,Doha,Qatar,1
-2018/1/15,Doha,Qatar,Edinburgh,UK,
-2018/4/29,Edinburgh,UK,Sao Paulo,Brazil,
-2018/5/3,Sao Paulo,Brazil,London,UK,
-2018/12/7,Edinburgh,UK,Washington DC,USA,
-2018/12/18,Washington DC,USA,Edinburgh,UK,
-2019/2/11,Edinburgh,UK,Zurich,Switzerland,
-2019/2/16,Zurich,Switzerland,Edinburgh,UK,
-2019/4/6,Edinburgh,UK,Limassol,Cyprus,
-2019/4/20,Paphos,Cyprus,Edinburgh,UK,
-2019/5/5,Edinburgh,UK,Valencia,Spain,
-2019/5/10,Valencia,Spain,Edinburgh,UK,
-2019/8/18,Edinburgh,UK,Doha,Qatar,1
-2019/8/19,Doha,Qatar,Chengdu,China,
-2019/9/23,Chengdu,China,Doha,Qatar,1
-2019/9/24,Doha,Qatar,Edinburgh,UK,
-2022/9/25,Edinburgh,UK,Doha,Qatar,1
-2022/9/26,Doha,Qatar,Chengdu,China,
-2022/10/12,Chengdu,China,Doha,Qatar,1
-2022/10/13,Doha,Qatar,Edinburgh,UK,
-2022/11/8,Edinburgh,UK,Bangkok,Thailand,
-2022/11/15,Bangkok,Thailand,Edinburgh,UK,
-2023/4/28,Edinburgh,UK,Los Angeles,USA,
-2023/5/3,Los Angeles,USA,Edinburgh,UK,
-2023/6/12,Edinburgh,UK,Doha,Qatar,1
-2023/6/13,Doha,Qatar,Chengdu,China,
-2023/7/19,Chengdu,China,Doha,Qatar,1
-2023/7/20,Doha,Qatar,Edinburgh,UK,
-2023/8/19,Edinburgh,UK,Istanbul,Turkey,1
-2023/8/20,Istanbul,Turkey,Chengdu,China,
-2023/9/1,Chengdu,China,Istanbul,Turkey,1
-2023/9/2,Istanbul,Turkey,Edinburgh,UK,
-2023/10/12,Edinburgh,UK,Amsterdam,Netherlands,1
-2023/10/13,Amsterdam,Netherlands,Chengdu,China,
-2023/11/12,Chengdu,China,Amsterdam,Netherlands,1
-2023/11/13,Amsterdam,Netherlands,Edinburgh,UK,
-2024/1/31,Edinburgh,UK,Doha,Qatar,1
-2024/2/1,Doha,Qatar,Chengdu,China,
-2024/3/1,Chengdu,China,Doha,Qatar,1
-2024/3/2,Doha,Qatar,Edinburgh,UK,
-2024/7/15,Edinburgh,UK,San Diego,USA,
-2024/7/22,San Diego,USA,Atlanta,USA,1
-2024/7/22,Atlanta,USA,Edinburgh,UK,
-2024/8/20,Edinburgh,UK,Doha,Qatar,1
-2024/8/21,Doha,Qatar,Chengdu,China,
-2024/9/16,Chengdu,China,Doha,Qatar,1
-2024/9/17,Doha,Qatar,Edinburgh,UK,
-2025/4/28,Edinburgh,UK,Doha,Qatar,1
-2025/4/29,Doha,Qatar,Chengdu,China,
-2025/6/17,Chengdu,China,Doha,Qatar,1
-2025/6/18,Doha,Qatar,Edinburgh,UK,
-2025/8/22,Edinburgh,UK,Doha,Qatar,1
-2025/8/23,Doha,Qatar,Hong Kong,China,
-2025/8/25,Hong Kong,China,Doha,Qatar,1
-2025/8/26,Doha,Qatar,Edinburgh,UK,
-2025/10/11,Edinburgh,UK,Doha,Qatar,1
-2025/10/12,Doha,Qatar,Singapore,Singapore,
-2025/10/19,Singapore,Singapore,Doha,Qatar,1
-2025/10/20,Doha,Qatar,Edinburgh,UK,
-2025/11/4,Edinburgh,UK,Bangkok,Thailand,1
-2025/11/5,Bangkok,Thailand,Chiangmai,Thailand,
-2025/11/20,Chiangmai,Thailand,Bangkok,Thailand,1
-2025/11/20,Bangkok,Thailand,Edinburgh,UK,
-2026/5/12,London,UK,Chengdu,China,
-2026/5/26,Chengdu,China,London,UK,
+year,origin_city,transfer_city,dest_city
+2008,Chengdu,Doha,New York
+2008,Houston,Doha,Chengdu
+2013,Chengdu,Amsterdam,Edinburgh
+2014,Edinburgh,,Alicante
+2014,Alicante,,Edinburgh
+2014,Edinburgh,Doha,Chengdu
+2014,Chengdu,Istanbul,Edinburgh
+2014,Edinburgh,,New York
+2015,New York,London,Edinburgh
+2015,Edinburgh,,Limassol
+2015,Limassol,,Edinburgh
+2015,Edinburgh,Amsterdam,Chengdu
+2015,Chengdu,Amsterdam,Edinburgh
+2017,Edinburgh,Doha,Chengdu
+2017,Chengdu,Doha,Edinburgh
+2017,Edinburgh,London,Rio de Janeiro
+2017,Rio de Janeiro,London,Edinburgh
+2017,Edinburgh,Paris,Chengdu
+2017,Chengdu,Amsterdam,Edinburgh
+2017,Edinburgh,Dublin,Chicago
+2017,Chicago,Dublin,Edinburgh
+2017,Edinburgh,Istanbul,Chengdu
+2017,Chengdu,Istanbul,Edinburgh
+2018,Edinburgh,London,Rio de Janeiro
+2018,Rio de Janeiro,London,Edinburgh
+2018,Edinburgh,Dublin,Washington D.C.
+2018,Washington D.C.,Dublin,Edinburgh
+2019,Edinburgh,,Zurich
+2019,Zurich,,Edinburgh
+2019,Edinburgh,,Limassol
+2019,Limassol,,Edinburgh
+2019,Edinburgh,,Valencia
+2019,Valencia,,Edinburgh
+2019,Edinburgh,Doha,Chengdu
+2019,Chengdu,Doha,Edinburgh
+2022,Edinburgh,Dublin,San Francisco
+2022,Los Angeles,,New York
+2022,New York,,Edinburgh
+2022,Edinburgh,Doha,Bangkok
+2022,Bangkok,Doha,Edinburgh
+2023,Edinburgh,Atlanta,Los Angeles
+2023,Los Angeles,,New York
+2023,New York,,Edinburgh
+2023,Edinburgh,Beijing,Shanghai
+2023,Shanghai,,Chengdu
+2023,Chengdu,Beijing,Edinburgh
+2024,Edinburgh,Doha,Chengdu
+2024,Chengdu,Doha,Edinburgh
+2024,Edinburgh,,Stockholm
+2024,Stockholm,,Edinburgh
+2024,Edinburgh,,Cairo
+2024,Cairo,,Edinburgh
+2024,Edinburgh,Atlanta,San Diego
+2024,San Diego,Atlanta,Edinburgh
+2024,Edinburgh,Doha,Shanghai
+2024,Shanghai,,Chengdu
+2024,Chengdu,Doha,Edinburgh
+2025,Edinburgh,Beijing,Chengdu
+2025,Chengdu,Beijing,Edinburgh
+2025,Edinburgh,Doha,Hong Kong
+2025,Hong Kong,Doha,Edinburgh
+2025,Edinburgh,Istanbul,Singapore
+2025,Singapore,Istanbul,Edinburgh
+2025,Edinburgh,Bangkok,Chiang Mai
+2025,Chiang Mai,Bangkok,Edinburgh
+2026,London,,Chengdu
+2026,Chengdu,,London
