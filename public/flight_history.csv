@@ -1,0 +1,68 @@
+year,origin_city,transfer_city,dest_city
+2008,Chengdu,Doha,New York
+2008,Houston,Doha,Chengdu
+2013,Chengdu,Amsterdam,Edinburgh
+2014,Edinburgh,,Alicante
+2014,Alicante,,Edinburgh
+2014,Edinburgh,Doha,Chengdu
+2014,Chengdu,Istanbul,Edinburgh
+2014,Edinburgh,,New York
+2015,New York,London,Edinburgh
+2015,Edinburgh,,Limassol
+2015,Limassol,,Edinburgh
+2015,Edinburgh,Amsterdam,Chengdu
+2015,Chengdu,Amsterdam,Edinburgh
+2017,Edinburgh,Doha,Chengdu
+2017,Chengdu,Doha,Edinburgh
+2017,Edinburgh,London,Rio de Janeiro
+2017,Rio de Janeiro,London,Edinburgh
+2017,Edinburgh,Paris,Chengdu
+2017,Chengdu,Amsterdam,Edinburgh
+2017,Edinburgh,Dublin,Chicago
+2017,Chicago,Dublin,Edinburgh
+2017,Edinburgh,Istanbul,Chengdu
+2017,Chengdu,Istanbul,Edinburgh
+2018,Edinburgh,London,Rio de Janeiro
+2018,Rio de Janeiro,London,Edinburgh
+2018,Edinburgh,Dublin,Washington D.C.
+2018,Washington D.C.,Dublin,Edinburgh
+2019,Edinburgh,,Zurich
+2019,Zurich,,Edinburgh
+2019,Edinburgh,,Limassol
+2019,Limassol,,Edinburgh
+2019,Edinburgh,,Valencia
+2019,Valencia,,Edinburgh
+2019,Edinburgh,Doha,Chengdu
+2019,Chengdu,Doha,Edinburgh
+2022,Edinburgh,Dublin,San Francisco
+2022,Los Angeles,,New York
+2022,New York,,Edinburgh
+2022,Edinburgh,Doha,Bangkok
+2022,Bangkok,Doha,Edinburgh
+2023,Edinburgh,Atlanta,Los Angeles
+2023,Los Angeles,,New York
+2023,New York,,Edinburgh
+2023,Edinburgh,Beijing,Shanghai
+2023,Shanghai,,Chengdu
+2023,Chengdu,Beijing,Edinburgh
+2024,Edinburgh,Doha,Chengdu
+2024,Chengdu,Doha,Edinburgh
+2024,Edinburgh,,Stockholm
+2024,Stockholm,,Edinburgh
+2024,Edinburgh,,Cairo
+2024,Cairo,,Edinburgh
+2024,Edinburgh,Atlanta,San Diego
+2024,San Diego,Atlanta,Edinburgh
+2024,Edinburgh,Doha,Shanghai
+2024,Shanghai,,Chengdu
+2024,Chengdu,Doha,Edinburgh
+2025,Edinburgh,Beijing,Chengdu
+2025,Chengdu,Beijing,Edinburgh
+2025,Edinburgh,Doha,Hong Kong
+2025,Hong Kong,Doha,Edinburgh
+2025,Edinburgh,Istanbul,Singapore
+2025,Singapore,Istanbul,Edinburgh
+2025,Edinburgh,Bangkok,Chiang Mai
+2025,Chiang Mai,Bangkok,Edinburgh
+2026,London,,Chengdu
+2026,Chengdu,,London
