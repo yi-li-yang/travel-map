@@ -11,6 +11,10 @@ import csv
 import json
 import math
 import os
+import tempfile
+import time
+import unicodedata
+import urllib.parse
 import urllib.request
 
 import matplotlib
@@ -35,65 +39,71 @@ CITY_COLOR   = "#f59e0b"       # amber
 TEXT_COLOR   = "#e2e8f0"
 TEXT2_COLOR  = "#94a3b8"
 
-# ── City coordinates (lat, lon, country) ─────────────────────────────────────
+# ── City geocoding (Nominatim / OpenStreetMap, local cache) ──────────────────
 
-CITIES = {
-    # (lat, lon, country)
-    "edinburgh":        (55.9533,  -3.1883, "UK"),
-    "london":           (51.4700,  -0.4543, "UK"),
-    "chengdu":          (30.5728, 104.0668, "China"),
-    "beijing":          (39.9042, 116.4074, "China"),
-    "shanghai":         (31.1443, 121.8083, "China"),
-    "hong kong":        (22.3080, 113.9185, "Hong Kong"),
-    "new york":         (40.6413, -73.7781, "USA"),
-    "houston":          (29.9902, -95.3368, "USA"),
-    "los angeles":      (33.9425,-118.4081, "USA"),
-    "san francisco":    (37.6213,-122.3790, "USA"),
-    "san diego":        (32.7338,-117.1933, "USA"),
-    "atlanta":          (33.6407, -84.4277, "USA"),
-    "chicago":          (41.9742, -87.9073, "USA"),
-    "washington d.c.":  (38.9531, -77.4565, "USA"),
-    "alicante":         (38.2822,  -0.5580, "Spain"),
-    "valencia":         (39.4893,  -0.4816, "Spain"),
-    "limassol":         (34.8721,  33.6226, "Cyprus"),
-    "paphos":           (34.7180,  32.4857, "Cyprus"),
-    "dublin":           (53.4213,  -6.2700, "Ireland"),
-    "amsterdam":        (52.3105,   4.7683, "Netherlands"),
-    "paris":            (48.8566,   2.3522, "France"),
-    "frankfurt":        (50.0379,   8.5622, "Germany"),
-    "munich":           (48.3538,  11.7861, "Germany"),
-    "zurich":           (47.4647,   8.5492, "Switzerland"),
-    "stockholm":        (59.6519,  17.9186, "Sweden"),
-    "cairo":            (30.1219,  31.4056, "Egypt"),
-    "bangkok":          (13.6900, 100.7501, "Thailand"),
-    "chiang mai":       (18.7669,  98.9628, "Thailand"),
-    "singapore":        ( 1.3644, 103.9915, "Singapore"),
-    "doha":             (25.2732,  51.6080, "Qatar"),
-    "istanbul":         (41.2608,  28.7418, "Turkey"),
-    "rio de janeiro":   (-22.8090,-43.2436, "Brazil"),
-    "sao paulo":        (-23.4356,-46.4731, "Brazil"),
-}
+CITY_CACHE_FILE = os.path.join(os.path.dirname(__file__), ".cities_cache.json")
+_city_cache: dict = {}
+
+def _load_city_cache():
+    global _city_cache
+    if os.path.exists(CITY_CACHE_FILE):
+        with open(CITY_CACHE_FILE, encoding="utf-8") as f:
+            _city_cache = json.load(f)
+
+def _save_city_cache():
+    with open(CITY_CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(_city_cache, f, indent=2, ensure_ascii=False)
+
+_load_city_cache()
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def normalize(name: str) -> str:
     """Lowercase + strip accents (handles São Paulo → sao paulo)."""
-    import unicodedata
     return unicodedata.normalize("NFD", name.lower()).encode("ascii", "ignore").decode()
 
 
-def lookup(name: str):
+def geocode_city(name: str):
+    """Return (lat, lon, country) via local cache or Nominatim API."""
     key = normalize(name)
-    entry = CITIES.get(key)
-    if entry:
-        return entry[0], entry[1]   # lat, lon
-    return None
+    if key in _city_cache:
+        e = _city_cache[key]
+        return e["lat"], e["lon"], e["country"]
+
+    print(f"  Geocoding: {name} …")
+    url = ("https://nominatim.openstreetmap.org/search?"
+           f"q={urllib.parse.quote(name)}&format=json&limit=1&addressdetails=1")
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "flight-map-visualizer/1.0",
+        "Accept-Language": "en",
+    })
+    try:
+        time.sleep(1)   # Nominatim fair-use: max 1 req/sec
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+        if not data:
+            print(f"  Geocode failed for: {name}")
+            return None
+        result = data[0]
+        lat     = float(result["lat"])
+        lon     = float(result["lon"])
+        country = result.get("address", {}).get("country", "Unknown")
+        _city_cache[key] = {"lat": lat, "lon": lon, "country": country}
+        _save_city_cache()
+        return lat, lon, country
+    except Exception as e:
+        print(f"  Geocode error for {name}: {e}")
+        return None
+
+
+def lookup(name: str):
+    result = geocode_city(name)
+    return (result[0], result[1]) if result else None
 
 
 def lookup_country(name: str):
-    key = normalize(name)
-    entry = CITIES.get(key)
-    return entry[2] if entry else None
+    result = geocode_city(name)
+    return result[2] if result else None
 
 
 def haversine(lat1, lon1, lat2, lon2) -> float:
@@ -149,7 +159,7 @@ def split_antimeridian(pts):
 GEOJSON_URL  = ("https://raw.githubusercontent.com/nvkelso/"
                 "natural-earth-vector/master/geojson/"
                 "ne_110m_admin_0_countries.geojson")
-GEOJSON_CACHE = "/tmp/ne_110m_countries.geojson"
+GEOJSON_CACHE = os.path.join(tempfile.gettempdir(), "ne_110m_countries.geojson")
 
 def load_world():
     if not os.path.exists(GEOJSON_CACHE):
@@ -159,7 +169,7 @@ def load_world():
         except Exception as e:
             print(f"  Failed ({e}) — world outlines will be skipped")
             return []
-    with open(GEOJSON_CACHE) as f:
+    with open(GEOJSON_CACHE, encoding="utf-8") as f:
         gj = json.load(f)
     polys = []
     for feat in gj["features"]:
@@ -441,7 +451,7 @@ def draw(flights, world_polys):
                 clip_on=True, path_effects=_halo)
 
     # star for home base Edinburgh
-    elat, elon, _ = CITIES["edinburgh"]
+    elat, elon, _ = geocode_city("Edinburgh")
     ax.scatter(elon, elat, s=120, color=CITY_COLOR, alpha=1.0, zorder=14,
                marker="*", linewidths=0)
 
