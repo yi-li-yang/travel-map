@@ -1,12 +1,41 @@
 import { useMemo } from 'react'
 import { normalizeCityName } from '../data/parseCsv.js'
 
+const CARD_SHADOW = 'rgba(0,0,0,0.04) 0px 4px 18px, rgba(0,0,0,0.027) 0px 2.025px 7.85px, rgba(0,0,0,0.02) 0px 0.8px 2.93px, rgba(0,0,0,0.01) 0px 0.175px 1.04px'
+
+function MetricCard({ label, value }) {
+  return (
+    <div
+      style={{
+        background: '#ffffff',
+        border: '1px solid rgba(0,0,0,0.1)',
+        borderRadius: 12,
+        boxShadow: CARD_SHADOW,
+        padding: '12px 14px',
+      }}
+    >
+      <div style={{ fontSize: 28, fontWeight: 700, color: 'rgba(0,0,0,0.95)', lineHeight: 1, letterSpacing: '-0.5px' }}>
+        {value}
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 500, color: '#a39e98', marginTop: 4, letterSpacing: '0.125px' }}>
+        {label}
+      </div>
+    </div>
+  )
+}
+
 function StatRow({ label, value, sub }) {
   return (
-    <div className="flex flex-col py-2 border-b" style={{ borderColor: '#1e293b' }}>
-      <span className="text-xs uppercase tracking-wide" style={{ color: '#475569' }}>{label}</span>
-      <span className="text-sm font-semibold mt-0.5" style={{ color: '#e2e8f0' }}>{value}</span>
-      {sub && <span className="text-xs" style={{ color: '#64748b' }}>{sub}</span>}
+    <div className="py-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: '#a39e98', letterSpacing: '0.125px', textTransform: 'uppercase' }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(0,0,0,0.95)', marginTop: 2 }}>
+        {value}
+      </div>
+      {sub && (
+        <div style={{ fontSize: 12, color: '#615d59', marginTop: 1 }}>{sub}</div>
+      )}
     </div>
   )
 }
@@ -15,7 +44,6 @@ export default function StatsPanel({ segments, citiesDb }) {
   const stats = useMemo(() => {
     if (!segments.length) return null
 
-    // Hub cities are excluded from country/city counts
     const hubKeys = new Set(
       Object.entries(citiesDb)
         .filter(([, c]) => c.isHub)
@@ -26,10 +54,8 @@ export default function StatsPanel({ segments, citiesDb }) {
       (s) => !hubKeys.has(normalizeCityName(s.destName))
     )
 
-    // Total distance (all segments)
     const totalKm = Math.round(segments.reduce((sum, s) => sum + s.distKm, 0))
 
-    // Unique destination countries
     const countries = new Set(
       nonHubSegments.map((s) => {
         const key = normalizeCityName(s.destName)
@@ -37,22 +63,18 @@ export default function StatsPanel({ segments, citiesDb }) {
       }).filter(Boolean)
     )
 
-    // Unique destination cities (non-hub)
     const cities = new Set(
       nonHubSegments.map((s) => normalizeCityName(s.destName))
     )
 
-    // Busiest year
     const yearCount = {}
     for (const s of segments) {
       yearCount[s.year] = (yearCount[s.year] || 0) + 1
     }
     const busiestYear = Object.entries(yearCount).sort((a, b) => b[1] - a[1])[0]
 
-    // Longest route
     const longest = segments.reduce((best, s) => s.distKm > best.distKm ? s : best, segments[0])
 
-    // Most visited city (by appearance as origin or non-hub dest)
     const cityVisits = {}
     for (const s of segments) {
       const ok = normalizeCityName(s.originName)
@@ -62,7 +84,6 @@ export default function StatsPanel({ segments, citiesDb }) {
     }
     const mostVisited = Object.entries(cityVisits).sort((a, b) => b[1] - a[1])[0]
 
-    // Approximate hours in air (avg speed 850 km/h)
     const hoursInAir = Math.round(totalKm / 850)
 
     return {
@@ -71,7 +92,7 @@ export default function StatsPanel({ segments, citiesDb }) {
       hoursInAir,
       countries: countries.size,
       cities: cities.size,
-      busiestYear: busiestYear ? `${busiestYear[0]} (${busiestYear[1]} flights)` : '—',
+      busiestYear: busiestYear ? `${busiestYear[0]} (${busiestYear[1]})` : '—',
       longestRoute: longest ? `${longest.originName} → ${longest.destName}` : '—',
       longestKm: longest ? Math.round(longest.distKm).toLocaleString() : '—',
       mostVisited: mostVisited ? mostVisited[0] : '—',
@@ -81,21 +102,30 @@ export default function StatsPanel({ segments, citiesDb }) {
 
   if (!stats) {
     return (
-      <div className="p-4 text-sm" style={{ color: '#475569' }}>Loading stats…</div>
+      <div className="p-4" style={{ fontSize: 14, color: '#a39e98' }}>Loading stats…</div>
     )
   }
 
   return (
-    <div className="p-4 overflow-y-auto">
-      <h2 className="text-xs uppercase tracking-widest mb-3 font-semibold" style={{ color: '#f59e0b' }}>
+    <div className="p-4" style={{ background: '#ffffff' }}>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: '0.125px',
+          color: '#a39e98',
+          textTransform: 'uppercase',
+          marginBottom: 14,
+        }}
+      >
         Flight Stats
-      </h2>
+      </div>
 
-      <div className="grid grid-cols-2 gap-x-4">
-        <StatRow label="Flights" value={stats.totalFlights} />
-        <StatRow label="Countries" value={stats.countries} />
-        <StatRow label="Cities" value={stats.cities} />
-        <StatRow label="Hours in air" value={`~${stats.hoursInAir}h`} />
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <MetricCard label="Flights" value={stats.totalFlights} />
+        <MetricCard label="Countries" value={stats.countries} />
+        <MetricCard label="Cities" value={stats.cities} />
+        <MetricCard label="Hours in air" value={`~${stats.hoursInAir}h`} />
       </div>
 
       <StatRow
@@ -103,10 +133,7 @@ export default function StatsPanel({ segments, citiesDb }) {
         value={`${stats.totalKm.toLocaleString()} km`}
         sub={`≈ ${(stats.totalKm / 40075).toFixed(1)}× around Earth`}
       />
-      <StatRow
-        label="Busiest year"
-        value={stats.busiestYear}
-      />
+      <StatRow label="Busiest year" value={stats.busiestYear} />
       <StatRow
         label="Longest flight"
         value={stats.longestRoute}

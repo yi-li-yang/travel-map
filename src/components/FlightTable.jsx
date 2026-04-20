@@ -1,5 +1,28 @@
 import { useCallback, useRef } from 'react'
 
+const BTN_SECONDARY = {
+  background: 'rgba(0,0,0,0.05)',
+  color: 'rgba(0,0,0,0.95)',
+  border: 'none',
+  borderRadius: 4,
+  fontSize: 12,
+  fontWeight: 500,
+  padding: '6px 10px',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  flex: 1,
+}
+
+const TH_STYLE = {
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: '0.125px',
+  textTransform: 'uppercase',
+  color: '#a39e98',
+  textAlign: 'left',
+  padding: '8px 4px',
+}
+
 export default function FlightTable({ rawRows, onDelete, onExport, onImport }) {
   const fileInputRef = useRef(null)
 
@@ -26,24 +49,22 @@ export default function FlightTable({ rawRows, onDelete, onExport, onImport }) {
   }, [onImport])
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" style={{ background: '#ffffff' }}>
       {/* Action buttons */}
-      <div className="flex gap-2 p-3 border-b" style={{ borderColor: '#1e293b' }}>
+      <div className="flex gap-2 p-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
         <button
           onClick={handleExport}
-          className="flex-1 text-xs py-1.5 px-2 rounded border transition-colors"
-          style={{ borderColor: '#334155', color: '#94a3b8', background: 'transparent' }}
-          onMouseOver={(e) => e.currentTarget.style.background = '#1e293b'}
-          onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+          style={BTN_SECONDARY}
+          onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.08)'}
+          onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
         >
           Export CSV
         </button>
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex-1 text-xs py-1.5 px-2 rounded border transition-colors"
-          style={{ borderColor: '#334155', color: '#94a3b8', background: 'transparent' }}
-          onMouseOver={(e) => e.currentTarget.style.background = '#1e293b'}
-          onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+          style={BTN_SECONDARY}
+          onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.08)'}
+          onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
         >
           Import CSV
         </button>
@@ -58,34 +79,53 @@ export default function FlightTable({ rawRows, onDelete, onExport, onImport }) {
 
       {/* Table */}
       <div className="flex-1 overflow-y-auto">
-        <table className="w-full text-xs border-collapse">
+        <table className="w-full border-collapse" style={{ fontSize: 12 }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #1e293b' }}>
-              <th className="text-left py-2 px-2 font-medium" style={{ color: '#475569' }}>Year</th>
-              <th className="text-left py-2 px-1 font-medium" style={{ color: '#475569' }}>From</th>
-              <th className="text-left py-2 px-1 font-medium" style={{ color: '#475569' }}>Via</th>
-              <th className="text-left py-2 px-1 font-medium" style={{ color: '#475569' }}>To</th>
-              <th className="py-2 px-1 w-6" />
+            <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+              <th style={{ ...TH_STYLE, paddingLeft: 8 }}>Year</th>
+              <th style={TH_STYLE}>From</th>
+              <th style={TH_STYLE}>Via</th>
+              <th style={TH_STYLE}>To</th>
+              <th style={{ ...TH_STYLE, width: 24 }} />
             </tr>
           </thead>
           <tbody>
             {rawRows.map((row, i) => (
               <tr
                 key={i}
-                className="border-b"
-                style={{ borderColor: '#0f172a' }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#0f172a'}
+                style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}
+                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'}
                 onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
               >
-                <td className="py-1.5 px-2" style={{ color: '#64748b' }}>{row.year}</td>
-                <td className="py-1.5 px-1" style={{ color: '#cbd5e1' }}>{row.origin_city}</td>
-                <td className="py-1.5 px-1" style={{ color: '#818cf8' }}>{row.transfer_city || '—'}</td>
-                <td className="py-1.5 px-1" style={{ color: '#cbd5e1' }}>{row.dest_city}</td>
-                <td className="py-1.5 px-1 text-center">
+                <td style={{ padding: '6px 4px 6px 8px', color: '#a39e98' }}>{row.year}</td>
+                <td style={{ padding: '6px 4px', color: 'rgba(0,0,0,0.95)' }}>{row.origin_city}</td>
+                <td style={{ padding: '6px 4px', color: '#615d59' }}>{row.transfer_city || '—'}</td>
+                <td style={{ padding: '6px 4px', color: 'rgba(0,0,0,0.95)' }}>{row.dest_city}</td>
+                <td style={{ padding: '6px 4px', textAlign: 'center' }}>
                   <button
                     onClick={() => onDelete(i)}
-                    className="w-4 h-4 text-xs flex items-center justify-center rounded hover:bg-red-900 transition-colors"
-                    style={{ color: '#475569' }}
+                    style={{
+                      width: 18,
+                      height: 18,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'transparent',
+                      border: 'none',
+                      borderRadius: 3,
+                      color: '#a39e98',
+                      cursor: 'pointer',
+                      fontSize: 15,
+                      fontFamily: 'inherit',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.color = '#ef4444'
+                      e.currentTarget.style.background = 'rgba(239,68,68,0.08)'
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.color = '#a39e98'
+                      e.currentTarget.style.background = 'transparent'
+                    }}
                     title="Delete flight"
                   >
                     ×
@@ -96,7 +136,7 @@ export default function FlightTable({ rawRows, onDelete, onExport, onImport }) {
           </tbody>
         </table>
         {rawRows.length === 0 && (
-          <div className="p-4 text-xs text-center" style={{ color: '#334155' }}>
+          <div className="p-4 text-center" style={{ fontSize: 12, color: '#a39e98' }}>
             No flights recorded.
           </div>
         )}

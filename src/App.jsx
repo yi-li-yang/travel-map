@@ -12,6 +12,18 @@ const TABS = [
   { id: 'add', label: '+ Add' },
 ]
 
+const BTN_SECONDARY = {
+  background: 'rgba(0,0,0,0.05)',
+  color: 'rgba(0,0,0,0.95)',
+  border: 'none',
+  borderRadius: 4,
+  padding: '6px 12px',
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+}
+
 export default function App() {
   const {
     segments,
@@ -36,48 +48,65 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen" style={{ background: '#0a0a1a' }}>
-        <div className="text-sm" style={{ color: '#475569' }}>Loading flight data…</div>
+      <div className="flex items-center justify-center h-screen" style={{ background: '#f6f5f4' }}>
+        <div style={{ fontSize: 14, color: '#a39e98' }}>Loading flight data…</div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen" style={{ background: '#0a0a1a' }}>
-        <div className="text-sm" style={{ color: '#f87171' }}>Error: {error}</div>
+      <div className="flex items-center justify-center h-screen" style={{ background: '#f6f5f4' }}>
+        <div style={{ fontSize: 14, color: '#ef4444' }}>Error: {error}</div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-screen" style={{ background: '#0a0a1a' }}>
+    <div className="flex flex-col h-screen" style={{ background: '#f6f5f4' }}>
       {/* Header */}
       <header
-        className="flex items-center justify-between px-4 py-2 border-b flex-shrink-0"
-        style={{ background: '#0d0d1f', borderColor: '#1e293b', zIndex: 10 }}
+        className="flex items-center justify-between px-4 flex-shrink-0"
+        style={{
+          background: '#ffffff',
+          borderBottom: '1px solid rgba(0,0,0,0.1)',
+          height: 52,
+          zIndex: 10,
+        }}
       >
         <div className="flex items-center gap-3">
-          <span className="text-base font-bold" style={{ color: '#f59e0b', letterSpacing: '0.05em' }}>
-            ✈ Flight Fog
+          <span style={{ fontSize: 16, fontWeight: 700, color: 'rgba(0,0,0,0.95)', letterSpacing: '-0.25px' }}>
+            Flight Fog
           </span>
-          <span className="text-xs" style={{ color: '#334155' }}>
-            {segments.length} arcs · {rawRows.length} trips
+          <span
+            style={{
+              background: '#f2f9ff',
+              color: '#097fe8',
+              borderRadius: 9999,
+              padding: '2px 8px',
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: '0.125px',
+            }}
+          >
+            {rawRows.length} trips · {segments.length} arcs
           </span>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={resetToDefault}
-            className="text-xs px-2 py-1 rounded border"
-            style={{ borderColor: '#334155', color: '#475569' }}
+            style={BTN_SECONDARY}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.08)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
             title="Reset to default CSV data"
           >
             Reset
           </button>
           <button
             onClick={() => setSidebarOpen((v) => !v)}
-            className="text-xs px-2 py-1 rounded border"
-            style={{ borderColor: '#334155', color: '#94a3b8' }}
+            style={BTN_SECONDARY}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.08)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
             title="Toggle sidebar"
           >
             {sidebarOpen ? 'Hide ›' : '‹ Show'}
@@ -89,15 +118,9 @@ export default function App() {
       <div className="flex flex-1 min-h-0">
         {/* Map area */}
         <div className="flex flex-col flex-1 min-w-0">
-          {/* Map takes all remaining space */}
           <div className="flex-1 min-h-0">
-            <FlatMap
-              segments={segments}
-              citiesDb={citiesDb}
-              maxYear={maxYear}
-            />
+            <FlatMap segments={segments} citiesDb={citiesDb} maxYear={maxYear} />
           </div>
-          {/* Timeline at bottom of map */}
           <div className="flex-shrink-0">
             <Timeline segments={segments} onYearChange={handleYearChange} />
           </div>
@@ -106,20 +129,29 @@ export default function App() {
         {/* Sidebar */}
         {sidebarOpen && (
           <div
-            className="flex flex-col flex-shrink-0 border-l"
-            style={{ width: 300, borderColor: '#1e293b', background: '#0d0d1f' }}
+            className="flex flex-col flex-shrink-0"
+            style={{ width: 300, borderLeft: '1px solid rgba(0,0,0,0.1)', background: '#ffffff' }}
           >
             {/* Tab bar */}
-            <div className="flex border-b flex-shrink-0" style={{ borderColor: '#1e293b' }}>
+            <div
+              className="flex flex-shrink-0"
+              style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }}
+            >
               {TABS.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className="flex-1 py-2 text-xs font-medium transition-colors"
+                  className="flex-1 transition-colors"
                   style={{
-                    color: activeTab === tab.id ? '#f59e0b' : '#475569',
-                    borderBottom: activeTab === tab.id ? '2px solid #f59e0b' : '2px solid transparent',
+                    padding: '10px 0',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: activeTab === tab.id ? '#0075de' : '#a39e98',
+                    border: 'none',
+                    borderBottom: activeTab === tab.id ? '2px solid #0075de' : '2px solid transparent',
                     background: 'transparent',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
                   }}
                 >
                   {tab.label}
@@ -128,7 +160,7 @@ export default function App() {
             </div>
 
             {/* Tab content */}
-            <div className="flex-1 min-h-0 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto" style={{ background: '#ffffff' }}>
               {activeTab === 'stats' && (
                 <StatsPanel segments={segments} citiesDb={citiesDb} />
               )}

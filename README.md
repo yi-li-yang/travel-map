@@ -65,7 +65,7 @@ Use the "Scan Email" feature in the web app. It searches Gmail for flight confir
 | Visualization | Python · Matplotlib · NumPy |
 | Web App | React + Vite |
 | 2D Map | D3.js + topojson |
-| Styling | Tailwind CSS (dark theme) |
+| Styling | Tailwind CSS + Notion-inspired design |
 | Email Parsing | Anthropic Claude API |
 | Email Access | Gmail API |
 | Hosting | GitHub Pages |
@@ -74,14 +74,23 @@ Use the "Scan Email" feature in the web app. It searches Gmail for flight confir
 
 ## Setup
 
+### Python visualizer
+
 ```bash
 git clone https://github.com/YOUR_USERNAME/travel-map.git
 cd travel-map
-pip install matplotlib numpy
-python3 visualize.py        # regenerate flight_map.png
+
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# macOS / Linux:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+python visualize.py          # regenerates flight_map.png
 ```
 
-For the email watcher (web app):
+### Web app
 
 ```bash
 npm install

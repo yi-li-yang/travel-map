@@ -9,7 +9,6 @@ export default function Timeline({ segments, onYearChange }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const intervalRef = useRef(null)
 
-  // Sync maxYear on data load
   useEffect(() => {
     setCurrentYear(maxYear)
     onYearChange(maxYear)
@@ -53,33 +52,44 @@ export default function Timeline({ segments, onYearChange }) {
 
   return (
     <div
-      className="flex items-center gap-4 px-4 py-3 border-t"
-      style={{ background: '#0d0d1f', borderColor: '#1e293b' }}
+      className="flex items-center gap-4 px-4 py-3"
+      style={{ background: '#ffffff', borderTop: '1px solid rgba(0,0,0,0.1)' }}
     >
       {/* Play/Pause button */}
       <button
         onClick={togglePlay}
-        className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-colors"
-        style={{ background: '#f59e0b', color: '#0a0a1a' }}
+        className="flex-shrink-0 flex items-center justify-center"
+        style={{
+          background: '#0075de',
+          color: '#ffffff',
+          border: 'none',
+          borderRadius: 4,
+          width: 34,
+          height: 34,
+          cursor: 'pointer',
+          flexShrink: 0,
+        }}
+        onMouseOver={(e) => e.currentTarget.style.background = '#005bab'}
+        onMouseOut={(e) => e.currentTarget.style.background = '#0075de'}
         title={isPlaying ? 'Pause' : 'Play timeline'}
       >
         {isPlaying ? (
-          // Pause icon
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor">
             <rect x="2" y="1" width="4" height="12" rx="1" />
             <rect x="8" y="1" width="4" height="12" rx="1" />
           </svg>
         ) : (
-          // Play icon
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor">
             <polygon points="2,1 13,7 2,13" />
           </svg>
         )}
       </button>
 
       {/* Year display */}
-      <div className="flex-shrink-0 text-right w-12">
-        <span className="text-lg font-bold" style={{ color: '#f59e0b' }}>{currentYear}</span>
+      <div className="flex-shrink-0 w-12 text-right">
+        <span style={{ fontSize: 20, fontWeight: 700, color: 'rgba(0,0,0,0.95)', letterSpacing: '-0.5px' }}>
+          {currentYear}
+        </span>
       </div>
 
       {/* Slider */}
@@ -91,18 +101,20 @@ export default function Timeline({ segments, onYearChange }) {
           value={currentYear}
           onChange={handleSlider}
           className="w-full"
-          style={{ accentColor: '#f59e0b' }}
+          style={{ accentColor: '#0075de' }}
         />
-        <div className="flex justify-between text-xs" style={{ color: '#475569' }}>
+        <div className="flex justify-between" style={{ fontSize: 11, color: '#a39e98' }}>
           <span>{minYear}</span>
           <span>{maxYear}</span>
         </div>
       </div>
 
       {/* Flight count */}
-      <div className="flex-shrink-0 text-right text-xs" style={{ color: '#94a3b8' }}>
-        <div>{flightsThisYear > 0 ? `+${flightsThisYear} this year` : 'no flights'}</div>
-        <div style={{ color: '#64748b' }}>{totalSoFar} total</div>
+      <div className="flex-shrink-0 text-right">
+        <div style={{ fontSize: 12, fontWeight: 500, color: '#615d59' }}>
+          {flightsThisYear > 0 ? `+${flightsThisYear} this year` : 'no flights'}
+        </div>
+        <div style={{ fontSize: 12, color: '#a39e98' }}>{totalSoFar} total</div>
       </div>
     </div>
   )

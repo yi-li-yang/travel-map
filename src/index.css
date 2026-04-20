@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,9 +10,14 @@
 
 body {
   margin: 0;
-  background-color: #0a0a1a;
-  color: #e2e8f0;
-  font-family: system-ui, -apple-system, sans-serif;
+  background-color: #f6f5f4;
+  color: rgba(0, 0, 0, 0.95);
+  font-family: Inter, -apple-system, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+
+::placeholder {
+  color: #a39e98;
+  opacity: 1;
 }
 
 /* Custom range slider styling */
@@ -19,25 +26,25 @@ input[type="range"] {
   appearance: none;
   height: 4px;
   border-radius: 2px;
-  background: #1e293b;
+  background: rgba(0, 0, 0, 0.1);
   outline: none;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: #f59e0b;
+  background: #0075de;
   cursor: pointer;
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: #f59e0b;
+  background: #0075de;
   cursor: pointer;
   border: none;
 }
