@@ -1,68 +1,68 @@
 year,origin_city,transfer_city,dest_city
-2008,Chengdu,Doha,New York
-2008,Houston,Doha,Chengdu
-2013,Chengdu,Amsterdam,Edinburgh
-2014,Edinburgh,,Alicante
-2014,Alicante,,Edinburgh
-2014,Edinburgh,Doha,Chengdu
-2014,Chengdu,Istanbul,Edinburgh
-2014,Edinburgh,,New York
-2015,New York,London,Edinburgh
-2015,Edinburgh,,Limassol
-2015,Limassol,,Edinburgh
-2015,Edinburgh,Amsterdam,Chengdu
-2015,Chengdu,Amsterdam,Edinburgh
-2017,Edinburgh,Doha,Chengdu
-2017,Chengdu,Doha,Edinburgh
-2017,Edinburgh,London,Rio de Janeiro
-2017,Rio de Janeiro,London,Edinburgh
-2017,Edinburgh,Paris,Chengdu
-2017,Chengdu,Amsterdam,Edinburgh
-2017,Edinburgh,Dublin,Chicago
-2017,Chicago,Dublin,Edinburgh
-2017,Edinburgh,Istanbul,Chengdu
-2017,Chengdu,Istanbul,Edinburgh
-2018,Edinburgh,London,Rio de Janeiro
-2018,Rio de Janeiro,London,Edinburgh
-2018,Edinburgh,Dublin,Washington D.C.
-2018,Washington D.C.,Dublin,Edinburgh
-2019,Edinburgh,,Zurich
-2019,Zurich,,Edinburgh
-2019,Edinburgh,,Limassol
-2019,Limassol,,Edinburgh
-2019,Edinburgh,,Valencia
-2019,Valencia,,Edinburgh
-2019,Edinburgh,Doha,Chengdu
-2019,Chengdu,Doha,Edinburgh
-2022,Edinburgh,Dublin,San Francisco
-2022,Los Angeles,,New York
-2022,New York,,Edinburgh
-2022,Edinburgh,Doha,Bangkok
-2022,Bangkok,Doha,Edinburgh
-2023,Edinburgh,Atlanta,Los Angeles
-2023,Los Angeles,,New York
-2023,New York,,Edinburgh
-2023,Edinburgh,Beijing,Shanghai
-2023,Shanghai,,Chengdu
-2023,Chengdu,Beijing,Edinburgh
-2024,Edinburgh,Doha,Chengdu
-2024,Chengdu,Doha,Edinburgh
-2024,Edinburgh,,Stockholm
-2024,Stockholm,,Edinburgh
-2024,Edinburgh,,Cairo
-2024,Cairo,,Edinburgh
-2024,Edinburgh,Atlanta,San Diego
-2024,San Diego,Atlanta,Edinburgh
-2024,Edinburgh,Doha,Shanghai
-2024,Shanghai,,Chengdu
-2024,Chengdu,Doha,Edinburgh
-2025,Edinburgh,Beijing,Chengdu
-2025,Chengdu,Beijing,Edinburgh
-2025,Edinburgh,Doha,Hong Kong
-2025,Hong Kong,Doha,Edinburgh
-2025,Edinburgh,Istanbul,Singapore
-2025,Singapore,Istanbul,Edinburgh
-2025,Edinburgh,Bangkok,Chiang Mai
-2025,Chiang Mai,Bangkok,Edinburgh
-2026,London,,Chengdu
-2026,Chengdu,,London
+2008,CTU,DOH,JFK
+2008,IAH,DOH,CTU
+2013,CTU,AMS,EDI
+2014,EDI,,ALC
+2014,ALC,,EDI
+2014,EDI,DOH,CTU
+2014,CTU,IST,EDI
+2014,EDI,,JFK
+2015,JFK,LHR,EDI
+2015,EDI,,LCA
+2015,LCA,,EDI
+2015,EDI,AMS,CTU
+2015,CTU,AMS,EDI
+2017,EDI,DOH,CTU
+2017,CTU,DOH,EDI
+2017,EDI,LHR,GIG
+2017,GIG,LHR,EDI
+2017,EDI,CDG,CTU
+2017,CTU,AMS,EDI
+2017,EDI,DUB,ORD
+2017,ORD,DUB,EDI
+2017,EDI,IST,CTU
+2017,CTU,IST,EDI
+2018,EDI,LHR,GIG
+2018,GIG,LHR,EDI
+2018,EDI,DUB,IAD
+2018,IAD,DUB,EDI
+2019,EDI,,ZRH
+2019,ZRH,,EDI
+2019,EDI,,LCA
+2019,LCA,,EDI
+2019,EDI,,VLC
+2019,VLC,,EDI
+2019,EDI,DOH,CTU
+2019,CTU,DOH,EDI
+2022,EDI,DUB,SFO
+2022,LAX,,JFK
+2022,JFK,,EDI
+2022,EDI,DOH,BKK
+2022,BKK,DOH,EDI
+2023,EDI,ATL,LAX
+2023,LAX,,JFK
+2023,JFK,,EDI
+2023,EDI,PEK,PVG
+2023,PVG,,CTU
+2023,CTU,PEK,EDI
+2024,EDI,DOH,CTU
+2024,CTU,DOH,EDI
+2024,EDI,,ARN
+2024,ARN,,EDI
+2024,EDI,,CAI
+2024,CAI,,EDI
+2024,EDI,ATL,SAN
+2024,SAN,ATL,EDI
+2024,EDI,DOH,PVG
+2024,PVG,,CTU
+2024,CTU,DOH,EDI
+2025,EDI,PEK,CTU
+2025,CTU,PEK,EDI
+2025,EDI,DOH,HKG
+2025,HKG,DOH,EDI
+2025,EDI,IST,SIN
+2025,SIN,IST,EDI
+2025,EDI,BKK,CNX
+2025,CNX,BKK,EDI
+2026,LHR,,CTU
+2026,CTU,,LHR

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import FlatMap from './components/FlatMap.jsx'
+import Globe from './components/Globe.jsx'
 import Timeline from './components/Timeline.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import FlightTable from './components/FlightTable.jsx'
@@ -76,7 +76,7 @@ export default function App() {
       >
         <div className="flex items-center gap-3">
           <span style={{ fontSize: 16, fontWeight: 700, color: 'rgba(0,0,0,0.95)', letterSpacing: '-0.25px' }}>
-            Flight Fog
+            Flight Log
           </span>
           <span
             style={{
@@ -119,7 +119,7 @@ export default function App() {
         {/* Map area */}
         <div className="flex flex-col flex-1 min-w-0">
           <div className="flex-1 min-h-0">
-            <FlatMap segments={segments} citiesDb={citiesDb} maxYear={maxYear} />
+            <Globe segments={segments} citiesDb={citiesDb} maxYear={maxYear} />
           </div>
           <div className="flex-shrink-0">
             <Timeline segments={segments} onYearChange={handleYearChange} />

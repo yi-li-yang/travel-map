@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { normalizeCityName } from '../data/parseCsv.js'
+import { normalizeCode } from '../data/parseCsv.js'
 
 const CARD_SHADOW = 'rgba(0,0,0,0.04) 0px 4px 18px, rgba(0,0,0,0.027) 0px 2px 8px, rgba(0,0,0,0.02) 0px 0.8px 3px'
 
@@ -24,7 +24,7 @@ const LABEL_STYLE = {
   marginBottom: 4,
 }
 
-function CityInput({ label, value, onChange, citiesDb, required = true }) {
+function AirportInput({ label, value, onChange, airportsDb, required = true }) {
   const [suggestions, setSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
 
@@ -32,10 +32,16 @@ function CityInput({ label, value, onChange, citiesDb, required = true }) {
     const val = e.target.value
     onChange(val)
     if (val.length >= 2) {
-      const norm = normalizeCityName(val)
-      const matches = Object.keys(citiesDb)
-        .filter((k) => k.includes(norm))
+      const upper = val.toUpperCase()
+      const lower = val.toLowerCase()
+      const matches = Object.entries(airportsDb)
+        .filter(([code, info]) =>
+          code.startsWith(upper) ||
+          info.city?.toLowerCase().includes(lower) ||
+          info.name?.toLowerCase().includes(lower)
+        )
         .slice(0, 8)
+        .map(([code, info]) => ({ code, info }))
       setSuggestions(matches)
       setShowSuggestions(matches.length > 0)
     } else {
@@ -43,8 +49,8 @@ function CityInput({ label, value, onChange, citiesDb, required = true }) {
     }
   }
 
-  const handleSelect = (city) => {
-    onChange(city)
+  const handleSelect = (code) => {
+    onChange(code)
     setShowSuggestions(false)
   }
 
@@ -67,7 +73,7 @@ function CityInput({ label, value, onChange, citiesDb, required = true }) {
           e.target.style.outline = 'none'
           setTimeout(() => setShowSuggestions(false), 150)
         }}
-        placeholder={label}
+        placeholder={`IATA code or city name`}
         style={INPUT_STYLE}
       />
       {showSuggestions && (
@@ -78,24 +84,27 @@ function CityInput({ label, value, onChange, citiesDb, required = true }) {
             border: '1px solid rgba(0,0,0,0.1)',
             borderRadius: 8,
             boxShadow: CARD_SHADOW,
-            maxHeight: 160,
+            maxHeight: 200,
           }}
         >
-          {suggestions.map((city) => (
+          {suggestions.map(({ code, info }) => (
             <div
-              key={city}
-              className="cursor-pointer capitalize"
+              key={code}
+              className="cursor-pointer"
               style={{
                 padding: '7px 12px',
                 fontSize: 13,
                 color: 'rgba(0,0,0,0.95)',
                 borderBottom: '1px solid rgba(0,0,0,0.05)',
               }}
-              onMouseDown={() => handleSelect(city)}
+              onMouseDown={() => handleSelect(code)}
               onMouseOver={(e) => e.currentTarget.style.background = '#f6f5f4'}
               onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
             >
-              {city}
+              <span style={{ fontWeight: 600 }}>{code}</span>
+              <span style={{ color: '#615d59', marginLeft: 6 }}>
+                {info.city}, {info.country}
+              </span>
             </div>
           ))}
         </div>
@@ -104,7 +113,7 @@ function CityInput({ label, value, onChange, citiesDb, required = true }) {
   )
 }
 
-export default function ManualEntryForm({ citiesDb, onAdd }) {
+export default function ManualEntryForm({ citiesDb: airportsDb, onAdd }) {
   const currentYear = new Date().getFullYear()
   const [year, setYear] = useState(String(currentYear))
   const [origin, setOrigin] = useState('')
@@ -124,20 +133,20 @@ export default function ManualEntryForm({ citiesDb, onAdd }) {
       return
     }
 
-    const originKey = normalizeCityName(origin)
-    const destKey = normalizeCityName(dest)
-    const transferKey = normalizeCityName(transfer)
+    const originKey = normalizeCode(origin)
+    const destKey = normalizeCode(dest)
+    const transferKey = normalizeCode(transfer)
 
-    if (!citiesDb[originKey]) {
-      setError(`Unknown city: "${origin}". Add it to cities.json first.`)
+    if (!airportsDb[originKey]) {
+      setError(`Unknown airport: "${origin}". Use IATA codes (e.g. CTU, LHR).`)
       return
     }
-    if (!citiesDb[destKey]) {
-      setError(`Unknown city: "${dest}". Add it to cities.json first.`)
+    if (!airportsDb[destKey]) {
+      setError(`Unknown airport: "${dest}". Use IATA codes (e.g. CTU, LHR).`)
       return
     }
-    if (transfer && !citiesDb[transferKey]) {
-      setError(`Unknown transfer city: "${transfer}". Add it to cities.json first.`)
+    if (transfer && !airportsDb[transferKey]) {
+      setError(`Unknown transfer airport: "${transfer}". Use IATA codes (e.g. DOH, AMS).`)
       return
     }
 
@@ -153,7 +162,7 @@ export default function ManualEntryForm({ citiesDb, onAdd }) {
     setDest('')
     setSuccess(true)
     setTimeout(() => setSuccess(false), 2000)
-  }, [year, origin, transfer, dest, citiesDb, onAdd])
+  }, [year, origin, transfer, dest, airportsDb, onAdd])
 
   return (
     <form onSubmit={handleSubmit} className="p-4 flex flex-col gap-3" style={{ background: '#ffffff' }}>
@@ -183,9 +192,9 @@ export default function ManualEntryForm({ citiesDb, onAdd }) {
         />
       </div>
 
-      <CityInput label="Origin" value={origin} onChange={setOrigin} citiesDb={citiesDb} />
-      <CityInput label="Transfer (optional)" value={transfer} onChange={setTransfer} citiesDb={citiesDb} required={false} />
-      <CityInput label="Destination" value={dest} onChange={setDest} citiesDb={citiesDb} />
+      <AirportInput label="Origin" value={origin} onChange={setOrigin} airportsDb={airportsDb} />
+      <AirportInput label="Transfer (optional)" value={transfer} onChange={setTransfer} airportsDb={airportsDb} required={false} />
+      <AirportInput label="Destination" value={dest} onChange={setDest} airportsDb={airportsDb} />
 
       {error && (
         <div
@@ -237,7 +246,7 @@ export default function ManualEntryForm({ citiesDb, onAdd }) {
       </button>
 
       <p style={{ fontSize: 12, color: '#a39e98', margin: 0 }}>
-        City names must match entries in cities.json.
+        Enter IATA airport codes (e.g. CTU, LHR) or search by city name.
       </p>
     </form>
   )

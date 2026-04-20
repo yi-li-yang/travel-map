@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Flight Fog is a personal flight history visualizer inspired by Fog of World and Flighty. It renders a dark world map where visited cities glow through the fog and flight routes appear as luminous arcs. It also watches Gmail for new flight bookings and adds them to the map automatically.
+Flight Log is a personal flight history visualizer — a simple and effective app for logging and visualizing flights. It renders an interactive 3D globe with flight routes as great-circle arcs and city markers. It also watches Gmail for new flight bookings and adds them to the map automatically.
 
 **Hosted on GitHub Pages** at `https://yi-li-yang.github.io/travel-map/`
 
@@ -10,24 +10,27 @@ Flight Fog is a personal flight history visualizer inspired by Fog of World and 
 
 **Done:**
 
-- React + Vite + Tailwind + D3 + PapaParse project scaffolding
-- 2D flat map (D3 Natural Earth projection) with fog-of-war effect
-- Flight arcs as great-circle curves; fog clears at visited cities
-- City hover tooltips, arc width scales with distance + frequency
+- React + Vite + Tailwind project scaffolding
+- Three.js interactive 3D globe with canvas texture (D3 equirectangular → Notion-palette earth)
+- Orbit controls: drag to rotate, scroll to zoom, auto-rotate when idle
+- Flight arcs as great-circle curves on the sphere surface (Notion Blue direct, light blue transfer)
+- Amber city dot markers; muted dots for transit hubs
+- Atmosphere halo on globe
 - Timeline slider with play/pause and year-by-year animation
-- Stats panel (flights, countries, cities, hours, distance, busiest year, longest route, most visited city)
+- Stats panel with Notion-style metric cards
 - Flight table with inline delete, CSV export, CSV import
 - Manual flight entry form with city autocomplete
 - localStorage persistence; CSV as portable backup
 - GitHub Actions deploy to GitHub Pages on push to main
-- Notion-inspired UI shell (white header, warm-white sidebar, Inter font, Notion Blue accents)
+- Notion-inspired UI shell (white header, warm sidebar, Inter font, Notion Blue accents)
+- Live Server workflow: `npm run build:watch` → `dist/` → served at `http://127.0.0.1:5500/`
 
 **Not yet built:**
 
-- 3D globe view (Three.js) — planned Phase 1 item
 - Email watcher / Gmail scan (Phase 3)
 - Inline edit of existing flights (Phase 2)
 - `needs_review` visual markers (Phase 2)
+- City click → focused city panel (Phase 5)
 - PWA manifest (Phase 4)
 
 ## Key Decisions
@@ -37,15 +40,15 @@ Flight Fog is a personal flight history visualizer inspired by Fog of World and 
 - Two map views: 2D flat (D3, done) and 3D globe (Three.js, planned). User toggles between them.
 - Email watcher uses Anthropic Claude API to parse emails (not regex). Gmail access via Gmail MCP or Gmail API.
 - All data persists in localStorage with CSV import/export for portability.
-- **Design split**: The map canvas is intentionally dark (fog IS darkness). The surrounding UI shell uses a Notion-inspired light theme (white panels, warm neutrals, Inter font). The dark map reads as an embedded content window.
-- `visualize.py` is a separate Python/Matplotlib script that generates a static `flight_map.png` — it has its own dark color scheme and is independent of the web app's UI design.
+- **Design**: The globe follows the Notion design.md palette end-to-end — warm parchment land, Notion Deep Navy oceans, Notion Blue arcs. The surrounding UI shell (header, sidebar, stats) uses the same Notion-inspired light theme. Everything is one cohesive aesthetic.
+- No fog-of-war effect. The globe is a clean interactive sphere; all visited cities and routes are always visible.
+- No Python visualizer. `visualize.py` and `flight_map.png` have been deleted. The web app is the only output.
 
 ## Tech Stack
 
-- Python + Matplotlib + NumPy (`visualize.py` — static PNG only)
 - React + Vite
-- Three.js (3D globe — planned)
-- D3.js + topojson (2D flat map — done)
+- Three.js (3D globe)
+- D3.js + topojson (earth texture, topology)
 - Tailwind CSS + Inter font
 - Anthropic Claude API (email parsing, Phase 3)
 - GitHub Pages deployment
@@ -64,15 +67,21 @@ year,origin_city,transfer_city,dest_city
 
 ## Design System
 
-### Map internals (unchanged — dark)
+Follows `design.md` (Notion-inspired) end-to-end — globe and UI chrome share the same palette.
+
+### Globe (Three.js canvas texture + scene)
 
 ```text
-Map background:  #0f172a
-Land fill:       #1e293b
-Land border:     #334155
-City glow:       #f59e0b (amber)
-Flight arc:      #06b6d4 (cyan, direct) / #818cf8 (indigo, transfer leg)
-Fog overlay:     rgba(26,26,46,0.88)
+Scene background:  #f6f5f4  (warm white — matches app shell)
+Ocean:             #213183  (Notion deep navy)
+Land:              #ede8e2  (warm parchment)
+Country borders:   #a39e98  (warm gray 300, 45% opacity)
+Graticule:         #a39e98  (18% opacity, 30° grid)
+Arc (direct):      #0075de  (Notion blue, 80% opacity)
+Arc (transfer):    #62aef0  (light link blue, 55% opacity)
+City dot:          #f59e0b  (amber)
+Hub dot:           #c4bfba  (muted warm)
+Atmosphere halo:   #93c5fd  (light blue, back-face, 5.5% opacity)
 ```
 
 ### UI shell (Notion-inspired light)
@@ -185,26 +194,26 @@ travel-map/
 │   └── cities.json
 ├── src/
 │   ├── components/
-│   │   ├── FlatMap.jsx       # D3 map, fog canvas, arcs, city dots
-│   │   ├── Timeline.jsx      # Year slider + playback
-│   │   ├── StatsPanel.jsx    # Metric cards + stat rows
-│   │   ├── FlightTable.jsx   # CSV-backed editable list
+│   │   ├── Globe.jsx          # Three.js globe, arcs, city dots, orbit controls
+│   │   ├── Timeline.jsx       # Year slider + playback
+│   │   ├── StatsPanel.jsx     # Metric cards + stat rows
+│   │   ├── FlightTable.jsx    # CSV-backed editable list
 │   │   └── ManualEntryForm.jsx
 │   ├── data/
-│   │   ├── useFlightData.js  # State hook, localStorage, CSV ops
-│   │   └── parseCsv.js       # CSV parsing + segment expansion
+│   │   ├── useFlightData.js   # State hook, localStorage, CSV ops
+│   │   └── parseCsv.js        # CSV parsing + segment expansion
 │   ├── utils/
-│   │   └── geo.js            # Haversine, great-circle, antimeridian split
+│   │   └── geo.js             # Haversine, great-circle interpolation
 │   ├── App.jsx
 │   ├── main.jsx
 │   └── index.css
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml        # Build + deploy to GitHub Pages on push to main
-├── requirements.txt          # Python: matplotlib, numpy
-├── visualize.py              # Standalone static PNG generator
+│       └── deploy.yml         # Build + deploy to GitHub Pages on push to main
+├── .vscode/
+│   └── settings.json          # Live Server: root = /dist, port = 5500
 ├── package.json
-├── vite.config.js            # base: '/travel-map/'
+├── vite.config.js             # base '/' (dev) / '/travel-map/' (production)
 ├── tailwind.config.js
 ├── CLAUDE.md
 └── README.md

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { normalizeCityName } from '../data/parseCsv.js'
+import { normalizeCode } from '../data/parseCsv.js'
 
 const CARD_SHADOW = 'rgba(0,0,0,0.04) 0px 4px 18px, rgba(0,0,0,0.027) 0px 2.025px 7.85px, rgba(0,0,0,0.02) 0px 0.8px 2.93px, rgba(0,0,0,0.01) 0px 0.175px 1.04px'
 
@@ -51,20 +51,20 @@ export default function StatsPanel({ segments, citiesDb }) {
     )
 
     const nonHubSegments = segments.filter(
-      (s) => !hubKeys.has(normalizeCityName(s.destName))
+      (s) => !hubKeys.has(normalizeCode(s.destName))
     )
 
     const totalKm = Math.round(segments.reduce((sum, s) => sum + s.distKm, 0))
 
     const countries = new Set(
       nonHubSegments.map((s) => {
-        const key = normalizeCityName(s.destName)
+        const key = normalizeCode(s.destName)
         return citiesDb[key]?.country
       }).filter(Boolean)
     )
 
     const cities = new Set(
-      nonHubSegments.map((s) => normalizeCityName(s.destName))
+      nonHubSegments.map((s) => normalizeCode(s.destName))
     )
 
     const yearCount = {}
@@ -77,14 +77,23 @@ export default function StatsPanel({ segments, citiesDb }) {
 
     const cityVisits = {}
     for (const s of segments) {
-      const ok = normalizeCityName(s.originName)
-      const dk = normalizeCityName(s.destName)
+      const ok = normalizeCode(s.originName)
+      const dk = normalizeCode(s.destName)
       if (!hubKeys.has(ok)) cityVisits[ok] = (cityVisits[ok] || 0) + 1
       if (!hubKeys.has(dk)) cityVisits[dk] = (cityVisits[dk] || 0) + 1
     }
     const mostVisited = Object.entries(cityVisits).sort((a, b) => b[1] - a[1])[0]
 
     const hoursInAir = Math.round(totalKm / 850)
+
+    // Use human city names for display
+    const longestRouteDisplay = longest
+      ? `${longest.originCity} → ${longest.destCity}`
+      : '—'
+
+    const mostVisitedDisplay = mostVisited
+      ? (citiesDb[mostVisited[0]]?.city || mostVisited[0])
+      : '—'
 
     return {
       totalFlights: segments.length,
@@ -93,9 +102,9 @@ export default function StatsPanel({ segments, citiesDb }) {
       countries: countries.size,
       cities: cities.size,
       busiestYear: busiestYear ? `${busiestYear[0]} (${busiestYear[1]})` : '—',
-      longestRoute: longest ? `${longest.originName} → ${longest.destName}` : '—',
+      longestRoute: longestRouteDisplay,
       longestKm: longest ? Math.round(longest.distKm).toLocaleString() : '—',
-      mostVisited: mostVisited ? mostVisited[0] : '—',
+      mostVisited: mostVisitedDisplay,
       mostVisitedCount: mostVisited ? mostVisited[1] : 0,
     }
   }, [segments, citiesDb])

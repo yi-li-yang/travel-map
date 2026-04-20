@@ -1,19 +1,15 @@
 import Papa from 'papaparse'
 import { haversine } from '../utils/geo.js'
 
-// Normalize city name to match cities.json keys (lowercase, strip accents)
-export function normalizeCityName(name) {
-  if (!name) return ''
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
+// Normalize IATA airport code: uppercase + trim
+export function normalizeCode(code) {
+  if (!code) return ''
+  return code.toUpperCase().trim()
 }
 
 // Expand raw CSV rows into arc segments.
 // A row with a transfer city becomes two segments.
-export function expandToSegments(rows, citiesDb) {
+export function expandToSegments(rows, airportsDb) {
   const segments = []
 
   // Count route frequency for arc width calculation
@@ -35,13 +31,12 @@ export function expandToSegments(rows, citiesDb) {
     if (!origin || !dest) continue
 
     if (transfer) {
-      // Two legs: origin → transfer, transfer → dest
-      const seg1 = makeSegment(origin, transfer, year, true, citiesDb, routeCount)
+      const seg1 = makeSegment(origin, transfer, year, true, airportsDb, routeCount)
       if (seg1) segments.push(seg1)
-      const seg2 = makeSegment(transfer, dest, year, false, citiesDb, routeCount)
+      const seg2 = makeSegment(transfer, dest, year, false, airportsDb, routeCount)
       if (seg2) segments.push(seg2)
     } else {
-      const seg = makeSegment(origin, dest, year, false, citiesDb, routeCount)
+      const seg = makeSegment(origin, dest, year, false, airportsDb, routeCount)
       if (seg) segments.push(seg)
     }
   }
@@ -58,35 +53,37 @@ function getRoutePairs(row) {
   return [[origin, dest]]
 }
 
-function makeSegment(originName, destName, year, isTransfer, citiesDb, routeCount) {
-  const originKey = normalizeCityName(originName)
-  const destKey = normalizeCityName(destName)
+function makeSegment(originCode, destCode, year, isTransfer, airportsDb, routeCount) {
+  const originKey = normalizeCode(originCode)
+  const destKey = normalizeCode(destCode)
 
-  const originCoords = citiesDb[originKey]
-  const destCoords = citiesDb[destKey]
+  const originEntry = airportsDb[originKey]
+  const destEntry = airportsDb[destKey]
 
-  if (!originCoords) {
-    console.warn(`City not found in citiesDb: "${originName}" (key: "${originKey}")`)
+  if (!originEntry) {
+    console.warn(`Airport not found: "${originCode}" (key: "${originKey}")`)
     return null
   }
-  if (!destCoords) {
-    console.warn(`City not found in citiesDb: "${destName}" (key: "${destKey}")`)
+  if (!destEntry) {
+    console.warn(`Airport not found: "${destCode}" (key: "${destKey}")`)
     return null
   }
 
   const distKm = haversine(
-    originCoords.lat, originCoords.lon,
-    destCoords.lat, destCoords.lon
+    originEntry.lat, originEntry.lon,
+    destEntry.lat, destEntry.lon
   )
 
-  const routeKey = [originName, destName].sort().join('|')
+  const routeKey = [originKey, destKey].sort().join('|')
   const repeats = routeCount[routeKey] || 1
 
   return {
-    originName,
-    destName,
-    originCoords,
-    destCoords,
+    originName: originKey,
+    destName: destKey,
+    originCity: originEntry.city || originKey,
+    destCity: destEntry.city || destKey,
+    originCoords: originEntry,
+    destCoords: destEntry,
     year,
     isTransfer,
     distKm,
@@ -94,38 +91,39 @@ function makeSegment(originName, destName, year, isTransfer, citiesDb, routeCoun
   }
 }
 
-// Build citiesDb from the raw cities.json + infer which cities are hubs
-export function buildCitiesDb(citiesJson, rows) {
-  // Determine hub cities: appear as transfer but never as final origin/dest
-  const transferCities = new Set()
-  const terminalCities = new Set()
+// Build airportsDb from raw airports.json + infer which airports are hubs
+export function buildAirportsDb(airportsJson, rows) {
+  const transferCodes = new Set()
+  const terminalCodes = new Set()
 
   for (const row of rows) {
     if (row.transfer_city?.trim()) {
-      transferCities.add(normalizeCityName(row.transfer_city))
+      transferCodes.add(normalizeCode(row.transfer_city))
     }
-    if (row.origin_city?.trim()) terminalCities.add(normalizeCityName(row.origin_city))
-    if (row.dest_city?.trim()) terminalCities.add(normalizeCityName(row.dest_city))
+    if (row.origin_city?.trim()) terminalCodes.add(normalizeCode(row.origin_city))
+    if (row.dest_city?.trim()) terminalCodes.add(normalizeCode(row.dest_city))
   }
 
   const db = {}
-  for (const [key, val] of Object.entries(citiesJson)) {
+  for (const [key, val] of Object.entries(airportsJson)) {
     db[key] = {
       ...val,
-      name: key, // lowercase normalized name
-      isHub: transferCities.has(key) && !terminalCities.has(key),
+      isHub: transferCodes.has(key) && !terminalCodes.has(key),
     }
   }
   return db
 }
 
+// Keep old name as alias for components that haven't been updated yet
+export const buildCitiesDb = buildAirportsDb
+
 // Load and parse all data. Returns { segments, citiesDb, rawRows }.
 export async function loadFlightData() {
   const base = import.meta.env.BASE_URL
 
-  const [csvText, citiesJson] = await Promise.all([
+  const [csvText, airportsJson] = await Promise.all([
     fetch(`${base}flight_history.csv`).then((r) => r.text()),
-    fetch(`${base}cities.json`).then((r) => r.json()),
+    fetch(`${base}airports.json`).then((r) => r.json()),
   ])
 
   const { data: rawRows } = Papa.parse(csvText, {
@@ -133,7 +131,7 @@ export async function loadFlightData() {
     skipEmptyLines: true,
   })
 
-  const citiesDb = buildCitiesDb(citiesJson, rawRows)
+  const citiesDb = buildAirportsDb(airportsJson, rawRows)
   const segments = expandToSegments(rawRows, citiesDb)
 
   return { segments, citiesDb, rawRows }

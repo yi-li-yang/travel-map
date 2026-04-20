@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Papa from 'papaparse'
 import { loadFlightData, buildCitiesDb, expandToSegments } from './parseCsv.js'
 
-const STORAGE_KEY = 'flightFog:flights'
+const STORAGE_KEY = 'flightLog:flights'
 
 export function useFlightData() {
   const [rawRows, setRawRows] = useState([])
