@@ -36,12 +36,11 @@ Flight Log is a personal flight history visualizer — a simple and effective ap
 ## Key Decisions
 
 - Flight data lives in `public/flight_history.csv`. Do not build any historical import pipeline.
-- Fog clears **around cities only** (radial gradient), NOT along flight paths. Arcs are rendered but do not clear fog.
-- Two map views: 2D flat (D3, done) and 3D globe (Three.js, planned). User toggles between them.
+- Only map view: 3D globe (Three.js). The flat D3 map and fog overlay have been removed.
 - Email watcher uses Anthropic Claude API to parse emails (not regex). Gmail access via Gmail MCP or Gmail API.
 - All data persists in localStorage with CSV import/export for portability.
 - **Design**: The globe follows the Notion design.md palette end-to-end — warm parchment land, Notion Deep Navy oceans, Notion Blue arcs. The surrounding UI shell (header, sidebar, stats) uses the same Notion-inspired light theme. Everything is one cohesive aesthetic.
-- No fog-of-war effect. The globe is a clean interactive sphere; all visited cities and routes are always visible.
+- Globe surface uses NASA Blue Marble satellite texture (loaded from CDN) with a transparent D3/TopoJSON border overlay sphere on top. Country name labels via CSS2DRenderer, zoom-aware.
 - No Python visualizer. `visualize.py` and `flight_map.png` have been deleted. The web app is the only output.
 
 ## Tech Stack
@@ -63,25 +62,24 @@ year,origin_city,transfer_city,dest_city
 
 `transfer_city` is blank for direct flights. A row with a transfer produces 2 arc segments (origin→transfer, transfer→dest). Transfer cities (Doha, Amsterdam, etc.) appear as dimmer hub dots on the map and are excluded from country/city counts.
 
-`public/cities.json` maps lowercase city names to `{lat, lon, country}`. Current coverage: Chengdu, New York, Doha, Houston, Edinburgh, Amsterdam, London, Frankfurt, Munich, Dublin, Paris, Alicante, Paphos, Bangkok, Beijing, Hong Kong, São Paulo, Atlanta, San Diego, and more.
+`public/airports.json` maps uppercase IATA codes to `{name, city, country, lat, lon}`. Covers ~200 major global airports. CSV values are now IATA codes (e.g. `CTU`, `LHR`, `DOH`). The old `cities.json` with lowercase city-name keys has been replaced.
 
 ## Design System
 
 Follows `design.md` (Notion-inspired) end-to-end — globe and UI chrome share the same palette.
 
-### Globe (Three.js canvas texture + scene)
+### Globe (Three.js)
 
 ```text
 Scene background:  #f6f5f4  (warm white — matches app shell)
-Ocean:             #213183  (Notion deep navy)
-Land:              #ede8e2  (warm parchment)
-Country borders:   #a39e98  (warm gray 300, 45% opacity)
-Graticule:         #a39e98  (18% opacity, 30° grid)
-Arc (direct):      #0075de  (Notion blue, 80% opacity)
+Earth texture:     NASA Blue Marble satellite image (CDN, fallback canvas)
+Border overlay:    White rgba(255,255,255,0.55) on transparent sphere
+Arc (direct):      #0075de  (Notion blue, 85% opacity)
 Arc (transfer):    #62aef0  (light link blue, 55% opacity)
-City dot:          #f59e0b  (amber)
-Hub dot:           #c4bfba  (muted warm)
-Atmosphere halo:   #93c5fd  (light blue, back-face, 5.5% opacity)
+City dot:          #f59e0b  (amber, flat circular THREE.Points sprite)
+Hub dot:           #c4bfba  (muted warm, flat circular sprite)
+Atmosphere halo:   #4a8fd4  (two-layer, 10% + 4% back-face)
+Country labels:    CSS2DRenderer, white uppercase, zoom-aware visibility
 ```
 
 ### UI shell (Notion-inspired light)
@@ -103,18 +101,14 @@ Shadow (cards):    4-layer stack, max opacity 0.04
 ### Phase 1: The Map ✅ (mostly done)
 
 1. ✅ Vite + React + Tailwind project
-2. ✅ Parse CSV at startup, build city coordinate lookup
-3. ✅ Render 2D world map (D3.js, Natural Earth projection)
-4. ✅ Dark fog overlay
-5. ✅ Fog clears at visited cities (radial gradient)
-6. ✅ Flight arcs as great-circle curves
-7. ✅ City dots with hover tooltips
-8. ✅ Timeline slider (year granularity)
-9. ✅ Play button to animate timeline
-10. ✅ Stats panel
-11. ☐ 3D globe view (Three.js)
-12. ☐ 2D ↔ 3D toggle button
-13. ✅ Responsive layout (map + sidebar)
+2. ✅ Parse CSV at startup, build IATA airport lookup
+3. ✅ 3D globe (Three.js, Blue Marble texture, CSS2D country labels)
+4. ✅ Flight arcs as great-circle curves
+5. ✅ City dots as flat circular THREE.Points sprites
+6. ✅ Timeline slider (year granularity)
+7. ✅ Play button to animate timeline
+8. ✅ Stats panel
+9. ✅ Responsive layout (map + sidebar)
 
 ### Phase 2: Data Management ✅ (mostly done)
 
@@ -190,8 +184,8 @@ Ideas to prioritize (user to decide order):
 ```text
 travel-map/
 ├── public/
-│   ├── flight_history.csv
-│   └── cities.json
+│   ├── flight_history.csv       # IATA codes, e.g. CTU,DOH,JFK
+│   └── airports.json            # ~200 airports: IATA → {name,city,country,lat,lon}
 ├── src/
 │   ├── components/
 │   │   ├── Globe.jsx          # Three.js globe, arcs, city dots, orbit controls
@@ -233,7 +227,7 @@ travel-map/
 
 - D3 and React both want DOM control. Use D3 for math/projections, React refs for DOM attachment. Don't mix D3 selections with React rendering.
 - Three.js scenes need cleanup on unmount (dispose geometries, materials, textures). Use `useEffect` cleanup.
-- The fog effect is NOT a CSS filter on map tiles. It's a `<canvas>` overlay filled dark, then `destination-out` composite punches holes at city positions. This is simpler and more performant.
-- Great-circle arcs on a 2D projection must be many small segments, not a bezier. Use `greatCirclePoints()` in `geo.js`.
-- City names in CSV won't always match lookup exactly. Use `normalizeCityName()` (lowercase + strip diacritics) consistently.
-- `visualize.py` and the web app are independent — changing the React UI design does NOT affect the PNG output, and vice versa.
+- Great-circle arcs must be many small segments, not a bezier. Use `greatCirclePoints()` in `geo.js`.
+- IATA codes in CSV are uppercase. Use `normalizeCode()` (just `.toUpperCase().trim()`) for all lookups — never lowercase.
+- CSS2DRenderer labels need the mount div to have `position: relative` and the renderer DOM element positioned absolutely inside it, or labels will misalign.
+- Country labels use back-face culling: check `camNorm.dot(labelPos.normalize()) > 0.18` before showing. Without this, labels on the far side of the globe appear through the sphere.

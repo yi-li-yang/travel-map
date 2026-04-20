@@ -1,5 +1,7 @@
 # Flight Log
 
+![Flight Log preview](https://raw.githubusercontent.com/yi-li-yang/travel-map/main/thumb.gif)
+
 Personal flight history tracker and visualizer.
 
 Inspired by [Fog of World](https://fogofworld.app/) and [Flighty](https://flighty.com/).
