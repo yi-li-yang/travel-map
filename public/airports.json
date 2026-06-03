@@ -1,5 +1,6 @@
 {
   "CTU": { "name": "Chengdu Shuangliu Intl", "city": "Chengdu", "country": "China", "lat": 30.5785, "lon": 103.9470 },
+  "SHE": { "name": "Shenyang Taoxian Intl", "city": "Shenyang", "country": "China", "lat": 41.6398, "lon": 123.4834 },
   "CKG": { "name": "Chongqing Jiangbei Intl", "city": "Chongqing", "country": "China", "lat": 29.7192, "lon": 106.6417 },
   "PEK": { "name": "Beijing Capital Intl", "city": "Beijing", "country": "China", "lat": 40.0801, "lon": 116.5846 },
   "PKX": { "name": "Beijing Daxing Intl", "city": "Beijing", "country": "China", "lat": 39.5098, "lon": 116.4105 },
