@@ -84,3 +84,8 @@ year,origin_city,transfer_city,dest_city
 2026,CTU,,SHE
 2026,SHE,,TFU
 2026,TFU,,LHR
+2026,LHR,,IST
+2026,IST,,TAS
+2026,TAS,IST,LGW
+2027,LHR,,HKG
+2027,CTU,HKG,LHR
