@@ -4,14 +4,37 @@ export default {
   theme: {
     extend: {
       colors: {
-        'notion-blue': '#0075de',
-        'notion-blue-active': '#005bab',
-        'warm-white': '#f6f5f4',
-        'warm-dark': '#31302e',
-        'warm-gray-500': '#615d59',
-        'warm-gray-300': '#a39e98',
-        'badge-blue-bg': '#f2f9ff',
-        'badge-blue-text': '#097fe8',
+        space: '#070b16',
+        ink: { DEFAULT: '#0e1526', 2: '#151e35', 3: '#1d2845' },
+        line: 'rgba(190, 205, 235, 0.12)',
+        fg: '#e8ecf5',
+        dim: '#8d97b0',
+        route: { DEFAULT: '#8fd3ff', deep: '#4aa3df' },
+        city: { DEFAULT: '#ffb454', soft: '#ffd9a0' },
+        hub: '#7a86a4',
+        danger: '#ff8a80',
+        ok: '#7fe0a8',
+      },
+      fontFamily: {
+        sans: ['"Instrument Sans"', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
+        serif: ['"Instrument Serif"', 'Georgia', 'serif'],
+      },
+      borderRadius: { panel: '18px' },
+      boxShadow: {
+        panel: '0 1px 0 rgba(255,255,255,0.04) inset, 0 18px 50px -12px rgba(0,0,0,0.65)',
+        glow: '0 0 24px -4px rgba(143, 211, 255, 0.45)',
+      },
+      keyframes: {
+        rise: {
+          from: { opacity: '0', transform: 'translateY(8px)' },
+          to: { opacity: '1', transform: 'none' },
+        },
+        fade: { from: { opacity: '0' }, to: { opacity: '1' } },
+        spin: { to: { transform: 'rotate(360deg)' } },
+      },
+      animation: {
+        rise: 'rise 260ms cubic-bezier(.2,.8,.2,1) both',
+        fade: 'fade 600ms ease both',
       },
     },
   },

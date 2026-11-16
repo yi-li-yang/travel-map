@@ -10,9 +10,9 @@ Inspired by [Fog of World](https://fogofworld.app/) and [Flighty](https://flight
 
 ## How It Works
 
-**Visualize** — flights render on an interactive 3D globe. 
+**Visualize** — flights render as glowing great-circle routes on an interactive night-side globe. Zoom from the whole planet down to city streets: the map is vector tiles (with a satellite layer), so detail keeps increasing as you zoom.
 
-**Stats** — total distance, time in the air, countries, cities, busiest year, longest route, and most-visited city.
+**Stats** — flights, countries, airports and distance as of any year on the timeline, a passport of countries with the year you first reached each, what was new in the selected year, your home base, and records (longest flight, most-flown route, most-visited airport).
 
 **Monitor** — connects to Gmail to detect new flight bookings automatically. Claude AI parses confirmation emails, extracts route and date, and adds it to the map.
 
@@ -37,10 +37,10 @@ year,origin_city,transfer_city,dest_city
 
 | | |
 | --- | --- |
-| 3D Globe | Three.js |
-| Map Data | D3.js + TopoJSON |
+| Globe | MapLibre GL JS (globe projection) |
+| Map Data | OpenFreeMap vector tiles, EOX Sentinel-2 satellite |
 | Web App | React + Vite |
-| Styling | Tailwind CSS + Notion-inspired design |
+| Styling | Tailwind CSS, Instrument Serif + Instrument Sans |
 | Email Parsing | Anthropic Claude API |
 | Hosting | GitHub Pages |
 

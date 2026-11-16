@@ -56,38 +56,3 @@ export function greatCirclePoints(lat1, lon1, lat2, lon2, n = 80) {
 
   return points
 }
-
-// Splits a great-circle path at the antimeridian (where lon jumps > 180°).
-// Returns an array of sub-paths, each safe to render independently.
-export function splitAntimeridian(points) {
-  const paths = []
-  let current = [points[0]]
-
-  for (let i = 1; i < points.length; i++) {
-    const prevLon = current[current.length - 1][1]
-    const currLon = points[i][1]
-
-    if (Math.abs(currLon - prevLon) > 180) {
-      // Crossed antimeridian — start a new sub-path
-      paths.push(current)
-      current = [points[i]]
-    } else {
-      current.push(points[i])
-    }
-  }
-
-  paths.push(current)
-  return paths.filter((p) => p.length > 1)
-}
-
-// Build SVG path "d" string from projected [x, y] pixel coords.
-export function pointsToPathD(projectedPts) {
-  if (projectedPts.length === 0) return ''
-  const [fx, fy] = projectedPts[0]
-  let d = `M ${fx},${fy}`
-  for (let i = 1; i < projectedPts.length; i++) {
-    const [x, y] = projectedPts[i]
-    d += ` L ${x},${y}`
-  }
-  return d
-}

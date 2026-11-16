@@ -185,3 +185,5 @@ node_modules/
 dist/
 .vite/
 *.local
+# Copied from node_modules at build time
+public/vendor/

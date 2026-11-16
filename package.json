@@ -7,15 +7,16 @@
     "dev": "vite",
     "build": "vite build",
     "build:watch": "vite build --watch --mode development",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predev": "node scripts/copy-maplibre-worker.mjs",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs",
+    "prebuild:watch": "node scripts/copy-maplibre-worker.mjs"
   },
   "dependencies": {
-    "d3": "^7.9.0",
+    "maplibre-gl": "^6.18.0",
     "papaparse": "^5.4.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "three": "^0.184.0",
-    "topojson-client": "^3.1.0"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",

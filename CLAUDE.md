@@ -2,232 +2,163 @@
 
 ## Project Overview
 
-Flight Log is a personal flight history visualizer — a simple and effective app for logging and visualizing flights. It renders an interactive 3D globe with flight routes as great-circle arcs and city markers. It also watches Gmail for new flight bookings and adds them to the map automatically.
+Flight Log is a personal flight history visualizer. It draws every route you have flown as a glowing great-circle arc on an interactive globe, with stats, a timeline, and manual flight entry. A Gmail watcher that adds new bookings automatically is planned (Phase 3).
 
 **Hosted on GitHub Pages** at `https://yi-li-yang.github.io/travel-map/`
 
-## Current State (as of 2026-04)
+## Current State (as of 2026-11)
 
 **Done:**
 
-- React + Vite + Tailwind project scaffolding
-- Three.js interactive 3D globe with canvas texture (D3 equirectangular → Notion-palette earth)
-- Orbit controls: drag to rotate, scroll to zoom, auto-rotate when idle
-- Flight arcs as great-circle curves on the sphere surface (Notion Blue direct, light blue transfer)
-- Amber city dot markers; muted dots for transit hubs
-- Atmosphere halo on globe
-- Timeline slider with play/pause and year-by-year animation
-- Stats panel with Notion-style metric cards
-- Flight table with inline delete, CSV export, CSV import
-- Manual flight entry form with city autocomplete
-- localStorage persistence; CSV as portable backup
+- React + Vite + Tailwind
+- **MapLibre GL JS globe** (`globe` projection) with real level-of-detail: OpenFreeMap vector tiles restyled in `src/map/style.js`, plus a satellite toggle (EOX Sentinel-2 cloudless)
+- Arcs as GeoJSON lines with a glow layer, width scaled by how often a route is flown, draw-in animation per year; amber city markers with halos, labels decluttered by MapLibre
+- Hover tooltips, click a city or route to select it (fly-to, highlight, detail panel); idle auto-rotate that pauses on interaction and respects `prefers-reduced-motion`
+- Full-bleed layout: floating glass drawer (Overview / Flights / Add flight; bottom sheet on phones), bottom timeline dock with a flights-per-year histogram scrubber, playback and speed
+- Overview stats that follow the timeline (up to / only the selected year): headline figures, passport (countries + continents), year in focus (new places), home base, records
+- Flights list grouped by year with search, delete with Undo, CSV export, CSV import with validation and a confirm dialog
+- Add-flight form with an accessible airport combobox, duplicate warning, fly-to on success
+- localStorage persistence (`flightLog:flights`), CSV as the portable backup
+- Loading, error, empty and WebGL-unsupported states; keyboard shortcuts (`Space`, `←/→`, `Esc`, `[`, `?`)
 - GitHub Actions deploy to GitHub Pages on push to main
-- Notion-inspired UI shell (white header, warm sidebar, Inter font, Notion Blue accents)
-- Live Server workflow: `npm run build:watch` → `dist/` → served at `http://127.0.0.1:5500/`
 
 **Not yet built:**
 
 - Email watcher / Gmail scan (Phase 3)
-- Inline edit of existing flights (Phase 2)
-- `needs_review` visual markers (Phase 2)
-- City click → focused city panel (Phase 5)
-- PWA manifest (Phase 4)
+- Inline edit of an existing flight
+- PWA manifest, PNG/share export
+- Country hover highlight, route-frequency colour mode, share-by-URL
 
 ## Key Decisions
 
-- Flight data lives in `public/flight_history.csv`. Do not build any historical import pipeline.
-- Only map view: 3D globe (Three.js). The flat D3 map and fog overlay have been removed.
-- Email watcher uses Anthropic Claude API to parse emails (not regex). Gmail access via Gmail MCP or Gmail API.
+- Flight data lives in `public/flight_history.csv`. Do not build any historical import pipeline. Rows after the current year are shown as "Planned trips".
+- The map is MapLibre, not Three.js. A single texture cannot give real detail when zooming; a tile pyramid can. Arcs and cities are GeoJSON sources, not meshes.
+- Base map tiles come from free keyless services (OpenFreeMap, EOX). Both can disappear; the app still draws arcs and cities over a plain background and shows a toast if tiles fail.
+- Email watcher (Phase 3) will use the Anthropic Claude API to parse emails, not regex.
 - All data persists in localStorage with CSV import/export for portability.
-- **Design**: The globe follows the Notion design.md palette end-to-end — warm parchment land, Notion Deep Navy oceans, Notion Blue arcs. The surrounding UI shell (header, sidebar, stats) uses the same Notion-inspired light theme. Everything is one cohesive aesthetic.
-- Globe surface uses NASA Blue Marble satellite texture (loaded from CDN) with a transparent D3/TopoJSON border overlay sphere on top. Country name labels via CSS2DRenderer, zoom-aware.
-- No Python visualizer. `visualize.py` and `flight_map.png` have been deleted. The web app is the only output.
+- Stats count **trips** (CSV rows), not legs. Transfer-only airports are "hubs": shown as small grey dots and excluded from country/airport counts.
 
 ## Tech Stack
 
-- React + Vite
-- Three.js (3D globe)
-- D3.js + topojson (earth texture, topology)
-- Tailwind CSS + Inter font
+- React 18 + Vite 6
+- MapLibre GL JS 6 (globe projection, vector + raster tiles)
+- Tailwind CSS 3, fonts Instrument Serif (numerals, headings) and Instrument Sans (UI)
+- PapaParse for CSV
 - Anthropic Claude API (email parsing, Phase 3)
 - GitHub Pages deployment
 
 ## Data Format
 
-`public/flight_history.csv` actual schema in use:
+`public/flight_history.csv`:
 
 ```csv
 year,origin_city,transfer_city,dest_city
 ```
 
-`transfer_city` is blank for direct flights. A row with a transfer produces 2 arc segments (origin→transfer, transfer→dest). Transfer cities (Doha, Amsterdam, etc.) appear as dimmer hub dots on the map and are excluded from country/city counts.
+`transfer_city` is blank for direct flights. A row with a transfer produces 2 arc segments (origin→transfer, transfer→dest). In the app each row also gets a stable `id` (for delete/undo, never written to the CSV).
 
-`public/airports.json` maps uppercase IATA codes to `{name, city, country, lat, lon}`. Covers ~200 major global airports. CSV values are now IATA codes (e.g. `CTU`, `LHR`, `DOH`). The old `cities.json` with lowercase city-name keys has been replaced.
+`public/airports.json` maps uppercase IATA codes to `{name, city, country, lat, lon}` (9,057 airports, OurAirports). Country is ISO-2; names and continents come from `src/data/countries.js`.
 
-## Design System
+## Design System: "Night side"
 
-Follows `design.md` (Notion-inspired) end-to-end — globe and UI chrome share the same palette.
-
-### Globe (Three.js)
+One theme, dark. The globe is the single bold element; the UI is quiet glass panels over it. Tokens live in `tailwind.config.js` and `src/index.css`; map colours in `COLORS` in `src/map/style.js`.
 
 ```text
-Scene background:  #f6f5f4  (warm white — matches app shell)
-Earth texture:     NASA Blue Marble satellite image (CDN, fallback canvas)
-Border overlay:    White rgba(255,255,255,0.55) on transparent sphere
-Arc (direct):      #0075de  (Notion blue, 85% opacity)
-Arc (transfer):    #62aef0  (light link blue, 55% opacity)
-City dot:          #f59e0b  (amber, flat circular THREE.Points sprite)
-Hub dot:           #c4bfba  (muted warm, flat circular sprite)
-Atmosphere halo:   #4a8fd4  (two-layer, 10% + 4% back-face)
-Country labels:    CSS2DRenderer, white uppercase, zoom-aware visibility
+Space (page):     #070b16   star field canvas behind the transparent map
+Panel:            rgba(14,21,38,.74) + backdrop blur, 1px rgba(190,205,235,.12) border (.panel)
+Text / dim:       #e8ecf5 / #8d97b0
+Route (arcs):     #8fd3ff core, #4aa3df glow, #6f8fb8 for legs of connecting trips
+City light:       #ffb454 (amber), hub #7a86a4
+Land / ocean:     #1a2542 / #08101f
 ```
 
-### UI shell (Notion-inspired light)
+- Numerals and headings use `.display` (Instrument Serif, tabular lining figures). Body is Instrument Sans.
+- No neon accent and no all-caps eyebrow labels. Sentence case everywhere.
+- Motion: one intro (routes draw in year by year on first load). After that, motion only answers an action. Everything respects `prefers-reduced-motion`.
+- Touch targets are at least 44px on phones. Keyboard focus is always visible (`:focus-visible`).
+
+## File Structure
 
 ```text
-Page background:   #f6f5f4  (warm white)
-Panel background:  #ffffff
-Border:            1px solid rgba(0,0,0,0.1)  (whisper)
-Accent / CTA:      #0075de  (Notion Blue)
-Heading text:      rgba(0,0,0,0.95)
-Secondary text:    #615d59  (warm gray 500)
-Muted text:        #a39e98  (warm gray 300)
-Font:              Inter (Google Fonts), 400/500/600/700
-Shadow (cards):    4-layer stack, max opacity 0.04
+travel-map/
+├── public/
+│   ├── flight_history.csv        # IATA codes, e.g. CTU,DOH,JFK
+│   ├── airports.json             # IATA → {name,city,country,lat,lon}
+│   └── vendor/maplibre/          # generated by scripts/copy-maplibre-worker.mjs (gitignored)
+├── scripts/copy-maplibre-worker.mjs
+├── src/
+│   ├── App.jsx                   # state, layout, shortcuts, toasts
+│   ├── components/
+│   │   ├── Globe.jsx             # MapLibre wrapper: camera, picking, spin, selection
+│   │   ├── Timeline.jsx          # dock: play, rolling year, histogram scrubber
+│   │   ├── Drawer.jsx            # side panel / bottom sheet
+│   │   ├── Overview.jsx          # stats blocks
+│   │   ├── SelectionPanel.jsx    # CityPanel, RoutePanel
+│   │   ├── FlightList.jsx        # list, search, export/import, delete
+│   │   ├── AddFlightForm.jsx     # airport combobox + form
+│   │   ├── MapControls.jsx, Tooltip.jsx, Screens.jsx (loading/error/empty/dialogs)
+│   │   └── ui/                   # Button, Tabs, Toasts, Icons, Starfield
+│   ├── map/
+│   │   ├── style.js              # MapLibre style, basemap toggle
+│   │   ├── arcs.js               # arc layers, ArcAnimator (draw-in)
+│   │   └── cities.js             # city layers + features
+│   ├── hooks/                    # useMedia, usePlayback
+│   ├── data/
+│   │   ├── useFlightData.js      # rows state, localStorage, undo-safe mutators
+│   │   ├── parseCsv.js           # PapaParse, cleaning, segment expansion, hubs
+│   │   └── countries.js          # continents + country names (Intl.DisplayNames)
+│   └── utils/
+│       ├── geo.js                # haversine, great-circle points
+│       └── stats.js              # computeStats / computeCity / computeRoute
+├── .github/workflows/deploy.yml
+├── vite.config.js                # base '/' (dev) / '/travel-map/' (production)
+└── tailwind.config.js
 ```
+
+## Coding Conventions
+
+- Functional React components with hooks only. Named exports for components, default export for `App`.
+- Tailwind utility classes. Inline `style` only for computed values. No JS hover/focus style mutation.
+- Keep components under ~200 lines.
+- All geographic maths in `src/utils/geo.js`; all derived numbers in `src/utils/stats.js`.
+- CSV parsing uses PapaParse, never manual splitting.
+- No TypeScript for now.
+
+## Common Pitfalls
+
+- **MapLibre 6 worker.** The worker is a separate ES module. `scripts/copy-maplibre-worker.mjs` copies it (and its shared chunk) to `public/vendor/maplibre/` before `dev` and `build`, and `Globe.jsx` points `setWorkerUrl` at it. Importing MapLibre's worker through Vite (`?worker`, pre-bundling) silently hangs the style load.
+- **MapLibre 6 has no default export.** Use `import * as maplibregl from 'maplibre-gl'`.
+- **Map container CSS.** MapLibre's stylesheet sets `.maplibregl-map { position: relative }`, overriding Tailwind `absolute`. Keep the map div inside a sized wrapper (`h-full w-full`).
+- **Hidden tabs don't render.** In headless/background tabs `requestAnimationFrame` is paused, so the map never fires `load` and the loading screen stays up. Activate the tab when testing.
+- **Idle spin vs camera moves.** The spin calls `jumpTo` every frame, which cancels any `easeTo`/`flyTo`. The spin must stay paused for a while after any `movestart`/`moveend` (see `spinRef` in `Globe.jsx`).
+- **Antimeridian.** Arc longitudes are unwrapped so one line stays continuous across ±180°; do not split lines.
+- **Stale closures.** Undo callbacks outlive renders. Mutators in `useFlightData` read `rowsRef`, not the `rawRows` state.
+- IATA codes in the CSV are uppercase. Normalise with `normalizeCode()` for every lookup, never lowercase.
+- Tile fonts are only what OpenFreeMap serves: Noto Sans Regular, Italic and Bold (no Medium).
 
 ## Build Phases
 
-### Phase 1: The Map ✅ (mostly done)
+### Phase 1: The Map ✅
 
-1. ✅ Vite + React + Tailwind project
-2. ✅ Parse CSV at startup, build IATA airport lookup
-3. ✅ 3D globe (Three.js, Blue Marble texture, CSS2D country labels)
-4. ✅ Flight arcs as great-circle curves
-5. ✅ City dots as flat circular THREE.Points sprites
-6. ✅ Timeline slider (year granularity)
-7. ✅ Play button to animate timeline
-8. ✅ Stats panel
-9. ✅ Responsive layout (map + sidebar)
-
-### Phase 2: Data Management ✅ (mostly done)
-
-1. ✅ Manual flight entry form
-2. ✅ City autocomplete
-3. ☐ Inline edit of existing entries (delete works; edit doesn't)
-4. ✅ CSV export
-5. ✅ CSV import (file picker; drag-and-drop is nice-to-have)
-6. ☐ Visual markers for `needs_review` entries
-7. ✅ localStorage persistence
+### Phase 2: Data Management ✅ (inline edit of an existing flight still open)
 
 ### Phase 3: Email Watcher ☐
 
 1. "Scan Email" button in UI
 2. Search Gmail: `flight confirmation OR boarding pass OR e-ticket itinerary`
-3. Send email body to Anthropic Claude API with extraction prompt
+3. Send email body to the Anthropic Claude API with an extraction prompt
 4. Claude returns `{flights: [{date, origin, destination, airline, booking_ref}]}`
 5. Deduplicate against existing data (route + date ± 1 day)
 6. Review panel: approve or dismiss each extracted flight
-7. Approved flights append to dataset and render immediately
+7. Approved flights append to the dataset and draw in immediately
 8. Store last scan timestamp to avoid re-processing
 
-Known email senders:
+Known email senders: Trip.com `en_flight_noreply@trip.com`, 携程 `ia_rsv@trip.com`, Qatar Airways `ebooking@qatarairways.com.qa`, Delta `DeltaAirLines@t.delta.com`, Sabre `confirmation@sabre.com`, Expedia `Expedia@uk.expediamail.com`.
 
-- Trip.com: `en_flight_noreply@trip.com`
-- 携程: `ia_rsv@trip.com`
-- Qatar Airways: `ebooking@qatarairways.com.qa`
-- Delta: `DeltaAirLines@t.delta.com`
-- Sabre: `confirmation@sabre.com`
-- Expedia: `Expedia@uk.expediamail.com`
+### Phase 4: Deploy & Polish (mostly done)
 
-### Phase 4: Deploy & Polish ✅ (mostly done)
+GitHub Actions deploy ✅, responsive layout ✅, loading states ✅. Open: share view as PNG, PWA manifest, refresh `thumb.gif` for the README.
 
-1. ✅ GitHub Actions workflow: build on push to main, deploy `/dist` to GitHub Pages
-2. ☐ Responsive mobile layout (basic layout exists; mobile polish needed)
-3. ☐ Share map view as PNG export
-4. ☐ Loading states and transitions
-5. ☐ PWA manifest
+### Phase 5: Ideas still open
 
-### Phase 5: Interactions
-
-Ideas to prioritize (user to decide order):
-
-#### Map interactions
-
-- **City click** → sidebar switches to a focused city panel: all flights for that city (as origin + destination) listed by date, total visit count, first visit year. Clicking another city or pressing Escape deselects.
-- **Arc click** → highlight that route on the map (brighten arc, dim others); sidebar shows route stats: times flown, total distance, first and last date.
-- **Country hover** → subtle highlight of all cities and arcs in that country; cursor shows country name + flight count.
-- **Fly-to animation** → when a city is selected, the map smoothly pans/zooms to center on it.
-- **Arc draw animation** → during timeline playback, new arcs animate drawing from origin to destination (300ms ease) instead of appearing instantly.
-
-#### Timeline & filtering
-
-- **Year chips** → row of clickable year labels above or below the slider for instant year jumps.
-- **Milestone markers** → small tick marks on the timeline for notable events: first flight, 50th flight, first international, etc.
-- **Decade mode** → coarser slider granularity that groups flights into 5-year bands.
-
-#### Visualization modes
-
-- **Route frequency overlay** → toggle arc color coding by how many times flown: single (cyan) → 2× (teal) → 3×+ (amber). Overrides the default direction-based coloring.
-- **Heatmap mode** → toggle city dots to show visit count as a filled heatmap rather than individual dots (useful at world scale).
-- **"First visit" highlight** → on timeline playback, cities and arcs appearing for the first time glow brighter momentarily.
-
-#### Utility
-
-- **City search** → search input in header or sidebar; typing zooms and centers the map on a matching city.
-- **Keyboard shortcuts**: `Space` = play/pause, `←` / `→` = step one year, `Escape` = deselect, `f` = toggle route frequency mode.
-- **Screenshot export** → "Save as PNG" button captures current map canvas + SVG layers and downloads as an image.
-- **Share URL** → encode current year + selected city/route into the URL hash so a specific view can be linked.
-
-## File Structure (actual)
-
-```text
-travel-map/
-├── public/
-│   ├── flight_history.csv       # IATA codes, e.g. CTU,DOH,JFK
-│   └── airports.json            # ~200 airports: IATA → {name,city,country,lat,lon}
-├── src/
-│   ├── components/
-│   │   ├── Globe.jsx          # Three.js globe, arcs, city dots, orbit controls
-│   │   ├── Timeline.jsx       # Year slider + playback
-│   │   ├── StatsPanel.jsx     # Metric cards + stat rows
-│   │   ├── FlightTable.jsx    # CSV-backed editable list
-│   │   └── ManualEntryForm.jsx
-│   ├── data/
-│   │   ├── useFlightData.js   # State hook, localStorage, CSV ops
-│   │   └── parseCsv.js        # CSV parsing + segment expansion
-│   ├── utils/
-│   │   └── geo.js             # Haversine, great-circle interpolation
-│   ├── App.jsx
-│   ├── main.jsx
-│   └── index.css
-├── .github/
-│   └── workflows/
-│       └── deploy.yml         # Build + deploy to GitHub Pages on push to main
-├── .vscode/
-│   └── settings.json          # Live Server: root = /dist, port = 5500
-├── package.json
-├── vite.config.js             # base '/' (dev) / '/travel-map/' (production)
-├── tailwind.config.js
-├── CLAUDE.md
-└── README.md
-```
-
-## Coding Conventions
-
-- Functional React components with hooks only, no class components
-- Named exports for components, default export for pages/App
-- Use Tailwind utility classes; inline `style` props for dynamic/computed values
-- Keep components under ~200 lines; split if larger
-- All geographic calculations go in `src/utils/geo.js`
-- CSV parsing goes in `src/data/parseCsv.js` — use PapaParse, not manual splitting
-- No TypeScript for now
-
-## Common Pitfalls
-
-- D3 and React both want DOM control. Use D3 for math/projections, React refs for DOM attachment. Don't mix D3 selections with React rendering.
-- Three.js scenes need cleanup on unmount (dispose geometries, materials, textures). Use `useEffect` cleanup.
-- Great-circle arcs must be many small segments, not a bezier. Use `greatCirclePoints()` in `geo.js`.
-- IATA codes in CSV are uppercase. Use `normalizeCode()` (just `.toUpperCase().trim()`) for all lookups — never lowercase.
-- CSS2DRenderer labels need the mount div to have `position: relative` and the renderer DOM element positioned absolutely inside it, or labels will misalign.
-- Country labels use back-face culling: check `camNorm.dot(labelPos.normalize()) > 0.18` before showing. Without this, labels on the far side of the globe appear through the sphere.
+Country hover highlight, route-frequency colour mode, "first visit" glow during playback, share-by-URL (year + selection in the hash), milestone ticks on the timeline.
