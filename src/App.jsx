@@ -50,7 +50,7 @@ function readBasemap() {
 export default function App() {
   // The app always opens on the first person; switching lasts for this visit only.
   const [user, setUser] = useState(USERS[0])
-  const { trips, segments, citiesDb, hasLoaded, error, retry } = useTravelData(user)
+  const { trips, segments, citiesDb, updated, life, hasLoaded, error, retry } = useTravelData(user)
   const { selected, select, back, clear } = useSelection()
 
   const desktop = useMedia('(min-width: 768px)', true)
@@ -295,6 +295,11 @@ export default function App() {
         <p className="mt-1.5 text-[13px] text-dim">
           {trips.length} {trips.length === 1 ? 'trip' : 'trips'} · {placeCount} {placeCount === 1 ? 'place' : 'places'}
         </p>
+        {updated && (
+          <p className="mt-0.5 text-[12px] text-dim">
+            Updated {new Date(updated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </p>
+        )}
         <UserSwitcher users={USERS} current={user} onChange={switchUser} />
       </header>
 
@@ -335,6 +340,7 @@ export default function App() {
         maxYear={maxYear}
         perYear={perYear}
         firstCountries={firstCountries}
+        life={life}
         year={shownYear}
         onYear={jumpToYear}
         playing={playing}

@@ -102,13 +102,36 @@ function loadPlaces(base) {
   return placesPromise
 }
 
+// When each CSV last changed (generated at build time). Optional: the app works without it.
+// Life events for the timeline (public/life/<id>.csv: from,to,label). Optional: no file means none.
+const loadLife = (base, id) =>
+  fetch(`${base}life/${id}.csv`)
+    .then((r) => (r.ok ? r.text() : ''))
+    .then((text) => {
+      const { data } = Papa.parse(text.replace(/^﻿/, ''), { header: true, skipEmptyLines: true })
+      return data
+        .filter((r) => /^\d{4}$/.test(String(r.from ?? '').trim()) && String(r.label ?? '').trim())
+        .map((r) => {
+          const from = Number(r.from)
+          const to = /^\d{4}$/.test(String(r.to ?? '').trim()) ? Number(r.to) : from
+          return { from, to: Math.max(from, to), label: r.label.trim() }
+        })
+    })
+    .catch(() => [])
+
+const loadStamps = (base) =>
+  fetch(`${base}trips/updated.json`)
+    .then((r) => (r.ok ? r.json() : {}))
+    .catch(() => ({}))
+
 // Load one person's trips file and the shared places.
 export async function loadTravelData(csvPath, idPrefix = '') {
   const base = import.meta.env.BASE_URL
-  const [csvRes, places] = await Promise.all([fetch(`${base}${csvPath}`), loadPlaces(base)])
+  const id = idPrefix.replace(/:$/, '')
+  const [csvRes, places, stamps, life] = await Promise.all([fetch(`${base}${csvPath}`), loadPlaces(base), loadStamps(base), loadLife(base, id)])
   if (!csvRes.ok) throw new Error('Could not load the trips file.')
   const { trips, skipped, error } = parseCsvText(await csvRes.text(), places, idPrefix)
   if (error) throw new Error(`${csvPath}: ${error}`)
   if (skipped) console.warn(`${skipped} rows in ${csvPath} were left out (unknown place or invalid route). Run "npm run trips -- check".`)
-  return { trips, places }
+  return { trips, places, updated: stamps[id] || null, life }
 }

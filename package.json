@@ -8,8 +8,8 @@
     "build": "vite build",
     "build:watch": "vite build --watch --mode development",
     "preview": "vite preview",
-    "predev": "node scripts/copy-maplibre-worker.mjs",
-    "prebuild": "node scripts/copy-maplibre-worker.mjs && node scripts/trips.mjs check",
+    "predev": "node scripts/copy-maplibre-worker.mjs && node scripts/stamp-updates.mjs",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs && node scripts/stamp-updates.mjs && node scripts/trips.mjs check",
     "prebuild:watch": "node scripts/copy-maplibre-worker.mjs",
     "trips": "node scripts/trips.mjs"
   },

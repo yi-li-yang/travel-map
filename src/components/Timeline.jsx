@@ -29,7 +29,7 @@ function RollingYear({ year }) {
 }
 
 /** The dock under the globe: play, the year, a histogram you can scrub, and the playback speed. */
-export function Timeline({ minYear, maxYear, perYear, firstCountries, year, onYear, playing, onToggle, speed, onSpeed, footer, dockRef, className = '', style }) {
+export function Timeline({ minYear, maxYear, perYear, firstCountries, life = [], year, onYear, playing, onToggle, speed, onSpeed, footer, dockRef, className = '', style }) {
   const planned = year > thisYear
   const finished = !playing && maxYear > minYear && year >= maxYear
   const nextSpeed = () => onSpeed(SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length])
@@ -59,7 +59,7 @@ export function Timeline({ minYear, maxYear, perYear, firstCountries, year, onYe
         </button>
 
         <div className="order-last w-full min-w-0 md:order-none md:w-auto md:flex-1">
-          <Scrubber minYear={minYear} maxYear={maxYear} perYear={perYear} firstCountries={firstCountries} year={year} onYear={onYear} />
+          <Scrubber minYear={minYear} maxYear={maxYear} perYear={perYear} firstCountries={firstCountries} life={life} year={year} onYear={onYear} />
         </div>
       </div>
       {footer}

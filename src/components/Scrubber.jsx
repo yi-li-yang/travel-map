@@ -5,9 +5,10 @@ const BUBBLE_HALF = 84
 
 /**
  * One bar per year, as tall as the number of trips. Hover or drag to read a year, click or drag to go there.
- * Planned years are striped. An amber dot marks a year with a first visit to a country.
+ * Planned years are striped. An amber dot marks a year with a first visit to a country. Under the bars, a line or
+ * diamond marks life events (public/life/<id>.csv), listed in the readout.
  */
-export function Scrubber({ minYear, maxYear, perYear, firstCountries, year, onYear }) {
+export function Scrubber({ minYear, maxYear, perYear, firstCountries, life = [], year, onYear }) {
   const ref = useRef(null)
   const [peek, setPeek] = useState(null) // { year, x } while the pointer is over the bars
   // Another person's years are a different row of bars, so a readout for the old row would be wrong.
@@ -58,6 +59,7 @@ export function Scrubber({ minYear, maxYear, perYear, firstCountries, year, onYe
   const n = perYear[year] || 0
   const peekCount = peek ? perYear[peek.year] || 0 : 0
   const peekFirst = peek ? firstCountries.get(peek.year) : null
+  const peekLife = peek ? life.filter((e) => e.from <= peek.year && peek.year <= e.to) : []
   const hasPlanned = maxYear > thisYear && minYear <= thisYear
 
   return (
@@ -72,6 +74,11 @@ export function Scrubber({ minYear, maxYear, perYear, firstCountries, year, onYe
             {peek.year} <span className="font-normal text-dim">· {peekCount} {peekCount === 1 ? 'trip' : 'trips'}</span>
           </div>
           {peekFirst && <div className="text-city">First time in {peekFirst.join(', ')}</div>}
+          {peekLife.map((e) => (
+            <div key={e.label} className="text-dim">
+              {e.label}
+            </div>
+          ))}
           {peek.year > thisYear && <div className="text-city-soft">Planned</div>}
         </div>
       )}
@@ -125,6 +132,21 @@ export function Scrubber({ minYear, maxYear, perYear, firstCountries, year, onYe
           </div>
         ))}
       </div>
+      {life.length > 0 && (
+        <div className="relative mt-0.5 h-2" aria-hidden="true">
+          {life.map((e) => {
+            const a = Math.max(e.from, minYear)
+            const b = Math.min(e.to, maxYear)
+            if (a > maxYear || b < minYear) return null
+            const left = ((a - minYear) / count) * 100
+            return e.to > e.from ? (
+              <span key={e.label} className="absolute top-[3px] h-[2px] rounded bg-white/30" style={{ left: `calc(${left}% + 2px)`, width: `calc(${((b - a + 1) / count) * 100}% - 4px)` }} />
+            ) : (
+              <span key={e.label} className="absolute top-[1px] h-[6px] w-[6px] -translate-x-1/2 rotate-45 border border-white/55" style={{ left: `${left + 50 / count}%` }} />
+            )
+          })}
+        </div>
+      )}
       <div className="mt-1 flex justify-between text-[11px] text-dim">
         <span>{minYear}</span>
         <span>{maxYear}</span>

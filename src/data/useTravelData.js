@@ -19,7 +19,7 @@ clearOldBrowserData()
  */
 export function useTravelData(user) {
   const csv = csvPath(user)
-  const [loaded, setLoaded] = useState({ csv: null, trips: [], places: null })
+  const [loaded, setLoaded] = useState({ csv: null, trips: [], places: null, updated: null, life: [] })
   const [error, setError] = useState(null)
   const [attempt, setAttempt] = useState(0)
 
@@ -27,7 +27,7 @@ export function useTravelData(user) {
     let cancelled = false
     setError(null)
     loadTravelData(csv, `${user.id}:`)
-      .then(({ trips, places }) => !cancelled && setLoaded({ csv, trips, places }))
+      .then(({ trips, places, updated, life }) => !cancelled && setLoaded({ csv, trips, places, updated, life }))
       .catch((err) => !cancelled && setError(err.message || 'Something went wrong.'))
     return () => {
       cancelled = true
@@ -43,6 +43,8 @@ export function useTravelData(user) {
     trips,
     segments,
     citiesDb,
+    updated: loaded.updated,
+    life: loaded.life,
     hasLoaded: loaded.csv !== null,
     error,
     retry: () => setAttempt((n) => n + 1),

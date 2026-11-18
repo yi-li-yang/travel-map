@@ -1,6 +1,7 @@
 {
   "HEIDELBERG": { "name": "Heidelberg", "city": "Heidelberg", "country": "DE", "lat": 49.3988, "lon": 8.6724 },
   "JIAXING": { "name": "Jiaxing", "city": "Jiaxing", "country": "CN", "lat": 30.7469, "lon": 120.7555 },
+  "JIUZHAIGOU": { "name": "Jiuzhaigou", "city": "Jiuzhaigou", "country": "CN", "lat": 33.2600, "lon": 103.9180 },
   "LUSHUN": { "name": "Lüshunkou", "city": "Lüshun", "country": "CN", "lat": 38.8122, "lon": 121.2617 },
   "MONACO": { "name": "Monaco", "city": "Monaco", "country": "MC", "lat": 43.7384, "lon": 7.4246 },
   "SUZHOU": { "name": "Suzhou", "city": "Suzhou", "country": "CN", "lat": 31.2990, "lon": 120.5853 },
