@@ -1,32 +1,43 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Globe } from './components/Globe.jsx'
 import { Timeline } from './components/Timeline.jsx'
-import { Drawer } from './components/Drawer.jsx'
+import { Drawer, DRAWER_TABS, SHEET_HEIGHT } from './components/Drawer.jsx'
 import { Overview } from './components/Overview.jsx'
 import { CityPanel, RoutePanel } from './components/SelectionPanel.jsx'
-import { FlightList } from './components/FlightList.jsx'
-import { AddFlightForm } from './components/AddFlightForm.jsx'
+import { TripPanel } from './components/TripPanel.jsx'
+import { TripList } from './components/TripList.jsx'
 import { MapControls } from './components/MapControls.jsx'
 import { Tooltip } from './components/Tooltip.jsx'
-import { LoadingScreen, ErrorScreen, WebglError, EmptyHero, ImportDialog, ShortcutsHelp } from './components/Screens.jsx'
+import { LoadingScreen, ErrorScreen, WebglError, EmptyHero } from './components/Screens.jsx'
+import { UserSwitcher } from './components/UserSwitcher.jsx'
 import { Starfield } from './components/ui/Starfield.jsx'
 import { Toasts } from './components/ui/Toasts.jsx'
 import { Button } from './components/ui/Button.jsx'
-import { PanelIcon, KeyboardIcon } from './components/ui/Icons.jsx'
-import { DRAWER_TABS } from './components/Drawer.jsx'
-import { useFlightData } from './data/useFlightData.js'
-import { parseCsvText } from './data/parseCsv.js'
+import { PanelIcon } from './components/ui/Icons.jsx'
+import { useTravelData } from './data/useTravelData.js'
+import { tripRouteKeys } from './data/route.js'
+import { USERS } from './data/users.js'
 import { useMedia } from './hooks/useMedia.js'
 import { usePlayback } from './hooks/usePlayback.js'
-import { listYears, tripsPerYear, computeStats, computeCity, computeRoute } from './utils/stats.js'
+import { useDockSpace } from './hooks/useDockSpace.js'
+import { useSelection, selectionKey } from './hooks/useSelection.js'
+import {
+  listYears,
+  tripsPerYear,
+  countPlaces,
+  countryFirstYears,
+  routeYearsMap,
+  kmByTrip,
+  homeOf,
+  computeStats,
+  computeCity,
+  computeRoute,
+  computeTrip,
+} from './utils/stats.js'
 
 const DRAWER_W = 360
 const BASEMAP_KEY = 'flightLog:basemap'
 const thisYear = new Date().getFullYear()
-
-function isTyping(el) {
-  return el && (el.closest?.('input, textarea, select, [contenteditable="true"]') || el.isContentEditable)
-}
 
 function readBasemap() {
   try {
@@ -37,31 +48,43 @@ function readBasemap() {
 }
 
 export default function App() {
-  const data = useFlightData()
-  const { rawRows, segments, citiesDb, isLoading, error } = data
+  // The app always opens on the first person; switching lasts for this visit only.
+  const [user, setUser] = useState(USERS[0])
+  const { trips, segments, citiesDb, hasLoaded, error, retry } = useTravelData(user)
+  const { selected, select, back, clear } = useSelection()
 
   const desktop = useMedia('(min-width: 768px)', true)
   const reduced = useMedia('(prefers-reduced-motion: reduce)')
 
-  const years = useMemo(() => listYears(rawRows), [rawRows])
-  const perYear = useMemo(() => tripsPerYear(rawRows), [rawRows])
+  // ---- what the data looks like ----
+  const years = useMemo(() => listYears(trips), [trips])
+  const perYear = useMemo(() => tripsPerYear(trips), [trips])
   const minYear = years[0] ?? thisYear
   const maxYear = years[years.length - 1] ?? thisYear
   // Land on the latest year that has really happened, not a planned one.
   const nowYear = useMemo(() => [...years].reverse().find((y) => y <= thisYear) ?? maxYear, [years, maxYear])
+  const placeCount = useMemo(() => countPlaces(trips), [trips])
+  const firstCountries = useMemo(() => countryFirstYears(trips, citiesDb), [trips, citiesDb])
+  const routeYears = useMemo(() => routeYearsMap(segments), [segments])
+  const tripKm = useMemo(() => kmByTrip(segments), [segments])
+  const tripById = useMemo(() => new Map(trips.map((t) => [t.id, t])), [trips])
+  const homePlace = useMemo(() => homeOf(trips, citiesDb), [trips, citiesDb])
+  const homeCode = homePlace?.code
+  const home = useMemo(() => (homePlace ? { code: homePlace.code, lon: homePlace.lon, lat: homePlace.lat } : null), [homeCode]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ---- view state ----
   const [year, setYear] = useState(null)
   const shownYear = year ?? nowYear
   const [scope, setScope] = useState('upto')
   const [tab, setTab] = useState('overview')
   const [drawerOpen, setDrawerOpen] = useState(null) // null until we know the screen size
-  const [selected, setSelected] = useState(null)
-  const [hover, setHover] = useState(null)
+  const [snap, setSnap] = useState('half') // how tall the phone sheet is
+  const [preview, setPreview] = useState(null) // a route or place lit up by a row the pointer is over
+  const [hover, setHover] = useState(null) // what the pointer is over on the globe
   const [basemap, setBasemap] = useState(readBasemap)
+  const [spin, setSpin] = useState(true)
   const [mapStatus, setMapStatus] = useState('loading') // loading | ready | webgl-error
   const [toasts, setToasts] = useState([])
-  const [pendingImport, setPendingImport] = useState(null)
-  const [helpOpen, setHelpOpen] = useState(false)
   const [vh, setVh] = useState(() => window.innerHeight)
 
   const globeRef = useRef(null)
@@ -75,27 +98,23 @@ export default function App() {
 
   // The side panel starts open on desktop and closed on phones.
   const open = drawerOpen ?? desktop
-  const setOpen = useCallback((v) => setDrawerOpen(v), [])
+  const openRef = useRef(open)
+  openRef.current = open
 
-  // ---- toasts ----
+  const toast = useCallback((text) => {
+    const id = Math.random().toString(36).slice(2)
+    setToasts((t) => [...t.slice(-2), { id, text }])
+  }, [])
   const dismissToast = useCallback((id) => setToasts((t) => t.filter((x) => x.id !== id)), [])
-  const toast = useCallback(
-    (text, action) => {
-      const id = Math.random().toString(36).slice(2)
-      setToasts((t) => [...t.slice(-2), { id, text, action }])
-      setTimeout(() => dismissToast(id), action ? 7000 : 3600)
-    },
-    [dismissToast],
-  )
 
   // ---- timeline ----
   const playback = usePlayback({ years, year: shownYear, setYear })
   const { playing, start: startPlayback, stop: stopPlayback, setSpeed } = playback
 
   useEffect(() => {
-    if (isLoading || !years.length) return
+    if (!hasLoaded || !years.length) return
     setYear((y) => (y === null ? (reduced ? nowYear : minYear) : Math.min(Math.max(y, minYear), maxYear)))
-  }, [isLoading, years, reduced, nowYear, minYear, maxYear])
+  }, [hasLoaded, years, reduced, nowYear, minYear, maxYear])
 
   // One orchestrated moment: when the globe is ready, routes draw themselves in, year by year.
   useEffect(() => {
@@ -113,108 +132,91 @@ export default function App() {
     }
   }, [playing, setSpeed])
 
+  const jumpToYear = useCallback(
+    (y) => {
+      stopPlayback()
+      setYear(y)
+    },
+    [stopPlayback],
+  )
+
   // ---- derived views ----
-  const stats = useMemo(
-    () => computeStats(rawRows, segments, citiesDb, shownYear, scope),
-    [rawRows, segments, citiesDb, shownYear, scope],
-  )
+  const stats = useMemo(() => computeStats(trips, segments, citiesDb, shownYear, scope), [trips, segments, citiesDb, shownYear, scope])
   const cityView = useMemo(
-    () => (selected?.type === 'city' ? computeCity(selected.code, rawRows, segments, citiesDb, shownYear) : null),
-    [selected, rawRows, segments, citiesDb, shownYear],
+    () => (selected?.type === 'city' ? computeCity(selected.code, trips, citiesDb, shownYear) : null),
+    [selected, trips, citiesDb, shownYear],
   )
+  const selectedTrip = selected?.tripId ? tripById.get(selected.tripId) : null
+  const tripView = useMemo(() => (selectedTrip && selectedTrip.legs.length > 1 ? computeTrip(selectedTrip, citiesDb) : null), [selectedTrip, citiesDb])
   const routeView = useMemo(
-    () =>
-      selected?.type === 'route' && selected.routeKeys.length === 1
-        ? computeRoute(selected.routeKeys[0], segments, citiesDb, shownYear)
-        : null,
-    [selected, segments, citiesDb, shownYear],
+    () => (selected?.type === 'route' && !tripView && selected.routeKeys.length === 1 ? computeRoute(selected.routeKeys[0], segments, shownYear) : null),
+    [selected, tripView, segments, shownYear],
   )
-
-  const airportCount = useMemo(() => {
-    const set = new Set()
-    for (const r of rawRows) {
-      if (r.origin_city) set.add(r.origin_city)
-      if (r.dest_city) set.add(r.dest_city)
-    }
-    return set.size
-  }, [rawRows])
-
-  const initialCenter = useMemo(() => {
-    const home = stats.home
-    return home ? [home.lon, Math.min(Math.max(home.lat, 10), 40)] : undefined
-    // Only the first load decides where the globe starts.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading])
 
   // ---- selection ----
-  const select = useCallback(
-    (sel, { reveal = true } = {}) => {
-      setSelected(sel)
-      if (sel && reveal) {
-        setTab('overview')
-        setOpen(true)
-      }
+  // A selection made on the globe or from the overview opens the side panel; one made from the trips list does not.
+  const choose = useCallback(
+    (sel, { reveal = true, keepBack = false } = {}) => {
+      select(sel, { keepBack })
+      if (!sel || !reveal) return
+      setTab('overview')
+      if (!openRef.current) setSnap('peek') // on a phone, leave the globe in view
+      setDrawerOpen(true)
     },
-    [setOpen],
+    [select],
   )
-  const selectCity = useCallback((code) => select({ type: 'city', code }), [select])
-  const selectRouteFromOverview = useCallback((keys) => select({ type: 'route', routeKeys: keys }), [select])
-  const selectRouteFromList = useCallback((keys) => select({ type: 'route', routeKeys: keys }, { reveal: false }), [select])
-  const flyToCountry = useCallback((c) => {
-    setSelected(null)
-    globeRef.current?.flyTo({ lon: c.lon, lat: c.lat, zoom: 4 })
-  }, [])
+  const chooseCity = useCallback((code, opts) => choose({ type: 'city', code }, opts), [choose])
+  const chooseRoute = useCallback((keys, opts) => choose({ type: 'route', routeKeys: keys }, opts), [choose])
+  const chooseTrip = useCallback(
+    (trip, opts) => {
+      choose({ type: 'route', routeKeys: tripRouteKeys(trip), tripId: trip.id }, opts)
+      // A trip that has not happened yet only shows once the timeline reaches it.
+      if (Number(trip.year) > shownYear) jumpToYear(Number(trip.year))
+    },
+    [choose, shownYear, jumpToYear],
+  )
+  const flyToCountry = useCallback(
+    (c) => {
+      clear()
+      globeRef.current?.flyTo({ lon: c.lon, lat: c.lat, zoom: 4 })
+    },
+    [clear],
+  )
 
-  // ---- actions ----
-  const addFlight = (row) => {
-    const added = data.addFlight(row)
-    const y = Number(added.year)
-    if (y > shownYear) setYear(y)
+  const backLabel = (sel) => {
+    if (!sel) return 'Overview'
+    if (sel.type === 'city') return citiesDb[sel.code]?.city || sel.code
+    const t = sel.tripId ? tripById.get(sel.tripId) : null
+    return t ? `${t.year} trip` : 'Route'
+  }
+
+  // ---- what lights up on the globe ----
+  // A row that opens something goes away under the pointer without a mouse-leave, so clear its preview.
+  useEffect(() => {
+    setPreview(null)
+  }, [selected, tab, scope])
+
+  const hoverKind = hover?.kind
+  const hoverCode = hover?.code
+  const hoverRoute = hover?.routeKey
+  const hoverTarget = useMemo(() => {
+    if (hoverKind === 'city') return { code: hoverCode }
+    return hoverKind === 'route' ? { routeKeys: [hoverRoute] } : null
+  }, [hoverKind, hoverCode, hoverRoute])
+  const highlight = preview ?? hoverTarget
+
+  // ---- people, basemap, map status ----
+  const switchUser = (next) => {
+    if (next.id === user.id) return
     stopPlayback()
-    const keys = [added.origin_city, added.transfer_city, added.dest_city]
-      .filter(Boolean)
-      .map((c, i, a) => (i ? [a[i - 1], c].sort().join('|') : null))
-      .filter(Boolean)
-    setSelected({ type: 'route', routeKeys: keys })
-    toast(`Added ${added.origin_city} to ${added.dest_city} in ${added.year}`)
-  }
-
-  const deleteFlight = (id) => {
-    const removed = data.deleteFlight(id)
-    if (!removed) return
-    toast('Flight deleted', { label: 'Undo', run: () => data.restoreFlight(removed) })
-  }
-
-  const exportCsv = () => {
-    const blob = new Blob([data.exportCsv()], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'flight_history.csv'
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
-    toast(`Exported ${rawRows.length} flights`)
-  }
-
-  const importFile = async (file) => {
-    const text = await file.text()
-    const parsed = parseCsvText(text, citiesDb)
-    if (parsed.error) return toast(parsed.error)
-    if (!parsed.rows.length) return toast('No valid flights found in that file.')
-    setPendingImport({ ...parsed, fileName: file.name })
-  }
-
-  const confirmImport = () => {
-    data.replaceFlights(pendingImport.rows)
-    toast(`Imported ${pendingImport.rows.length} flights`)
-    setSelected(null)
-    setPendingImport(null)
-  }
-
-  const resetFlights = async () => {
-    await data.resetToDefault()
-    setSelected(null)
-    toast('Restored the original flights')
+    setYear(null)
+    clear()
+    setPreview(null)
+    setHover(null)
+    setScope('upto')
+    setTab('overview')
+    introRef.current = 'idle' // routes draw themselves in again for the new person
+    setUser(next)
   }
 
   const toggleBasemap = () => {
@@ -230,101 +232,76 @@ export default function App() {
   const onMapStatus = useCallback(
     (s) => {
       if (s === 'ready') setMapStatus((m) => (m === 'loading' ? 'ready' : m))
-      else if (s === 'tiles-error') toast('Map tiles could not load. Your flights still show on the globe.')
+      else if (s === 'tiles-error') toast('Map tiles could not load. Your trips still show on the globe.')
       else if (s === 'webgl-error') setMapStatus('webgl-error')
     },
     [toast],
   )
 
-  // ---- keyboard ----
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.metaKey || e.ctrlKey || e.altKey) return
-      const t = e.target
-      if (isTyping(t)) return
-      if (e.key === 'Escape') {
-        if (selected) setSelected(null)
-        return
-      }
-      if (e.key === ' ') {
-        if (t.closest?.('button, a, [role="tab"], [role="slider"]')) return
-        e.preventDefault()
-        playback.toggle()
-      } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-        if (t.closest?.('[role="slider"], [role="tab"]')) return
-        e.preventDefault()
-        playback.step(e.key === 'ArrowRight' ? 1 : -1)
-      } else if (e.key === '[') {
-        setOpen(!open)
-      } else if (e.key === '?') {
-        setHelpOpen(true)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [selected, playback, open, setOpen])
-
   // ---- layout numbers shared with the globe ----
-  const dockH = desktop ? 108 : 150
+  const [dockEl, setDockEl] = useState(null)
+  const dockSpace = useDockSpace(dockEl)
+  const dockH = (dockSpace || (desktop ? 108 : 230)) + 4
+  const sheetOpen = !desktop && open
   const padding = useMemo(
     () => ({
       top: 0,
       left: 0,
       right: desktop && open ? DRAWER_W + 24 : 0,
-      bottom: !desktop && open ? Math.round(vh * 0.6) : dockH,
+      bottom: sheetOpen ? Math.round(vh * SHEET_HEIGHT[snap]) : dockH,
     }),
-    [desktop, open, vh, dockH],
+    [desktop, open, sheetOpen, snap, vh, dockH],
   )
+  const dockRight = desktop && open ? DRAWER_W + 32 : 16
 
   const goTab = (id) => {
     setTab(id)
-    setOpen(true)
+    setSnap('half')
+    setDrawerOpen(true)
   }
 
-  const showSelection = tab === 'overview' && (cityView || routeView)
-  const isEmpty = !isLoading && rawRows.length === 0
+  const showSelection = tab === 'overview' && (cityView || tripView || routeView)
+  const isEmpty = hasLoaded && trips.length === 0
 
-  if (error) return <ErrorScreen message={error} onRetry={data.retry} />
-
-  const dockRight = desktop && open ? DRAWER_W + 32 : 16
+  if (error) return <ErrorScreen message={error} onRetry={retry} />
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-space" style={{ '--dock-h': `${dockH}px` }}>
       <Starfield />
 
-      {!isLoading && (
+      {hasLoaded && (
         <Globe
           ref={globeRef}
           segments={segments}
           citiesDb={citiesDb}
           maxYear={shownYear}
           selected={selected}
-          onSelect={(sel) => select(sel)}
+          highlight={highlight}
+          onSelect={(sel) => choose(sel)}
           onHover={setHover}
           onStatus={onMapStatus}
           basemap={basemap}
           padding={padding}
           reducedMotion={reduced}
-          initialCenter={initialCenter}
+          autoRotate={spin}
+          home={home}
         />
       )}
       {mapStatus === 'webgl-error' && <WebglError />}
 
       {/* Brand */}
       <header className="pointer-events-none absolute left-4 top-4 z-10 md:left-6 md:top-5">
-        <h1 className="display text-[28px] leading-none md:text-[32px]">Flight Log</h1>
+        <h1 className="display text-[28px] leading-none md:text-[32px]">Travel Log</h1>
         <p className="mt-1.5 text-[13px] text-dim">
-          {rawRows.length} {rawRows.length === 1 ? 'flight' : 'flights'} · {airportCount} {airportCount === 1 ? 'airport' : 'airports'}
+          {trips.length} {trips.length === 1 ? 'trip' : 'trips'} · {placeCount} {placeCount === 1 ? 'place' : 'places'}
         </p>
+        <UserSwitcher users={USERS} current={user} onChange={switchUser} />
       </header>
 
       {/* Top right: only while the panel is closed on desktop */}
       {desktop && !open && (
-        <div className="absolute right-4 top-4 z-10 flex gap-2">
-          <Button variant="ghost" size="icon" className="panel" onClick={() => setHelpOpen(true)} aria-label="Keyboard shortcuts">
-            <KeyboardIcon />
-          </Button>
-          <Button className="panel" onClick={() => setOpen(true)} aria-expanded={false}>
+        <div className="absolute right-4 top-4 z-10">
+          <Button className="panel" onClick={() => setDrawerOpen(true)} aria-expanded={false}>
             <PanelIcon /> Open panel
           </Button>
         </div>
@@ -332,46 +309,41 @@ export default function App() {
 
       <MapControls
         className="absolute z-10 transition-[right] duration-300"
-        style={{ right: dockRight, bottom: dockH + 16, display: !desktop && open ? 'none' : undefined }}
+        style={{ right: dockRight, bottom: dockH + 12, display: sheetOpen ? 'none' : undefined }}
         onZoomIn={() => globeRef.current?.zoomBy(1)}
         onZoomOut={() => globeRef.current?.zoomBy(-1)}
         onReset={() => {
-          setSelected(null)
+          clear()
           globeRef.current?.resetView()
         }}
         basemap={basemap}
         onToggleBasemap={toggleBasemap}
+        spinning={spin && !reduced}
+        onToggleSpin={reduced ? undefined : () => setSpin((s) => !s)}
       />
 
-      <Tooltip hover={hover} citiesDb={citiesDb} />
+      <Tooltip hover={hover} citiesDb={citiesDb} routeYears={routeYears} rightLimit={desktop && open ? window.innerWidth - (DRAWER_W + 32) : undefined} />
 
-      {isEmpty && (
-        <EmptyHero
-          style={{ right: desktop && open ? DRAWER_W + 24 : 0 }}
-          onAdd={() => goTab('add')}
-          onImport={() => goTab('flights')}
-        />
-      )}
+      {isEmpty && <EmptyHero name={user.name} style={{ right: desktop && open ? DRAWER_W + 24 : 0 }} />}
 
       {/* Timeline dock */}
       <Timeline
+        dockRef={setDockEl}
         className="absolute z-20 transition-[right] duration-300"
-        style={{ left: 16, right: dockRight, bottom: desktop ? 16 : 8 }}
+        style={{ left: 16, right: dockRight, bottom: desktop ? 16 : 'calc(8px + env(safe-area-inset-bottom))' }}
         minYear={minYear}
         maxYear={maxYear}
         perYear={perYear}
+        firstCountries={firstCountries}
         year={shownYear}
-        onYear={(y) => {
-          playback.stop()
-          setYear(y)
-        }}
-        playing={playback.playing}
+        onYear={jumpToYear}
+        playing={playing}
         onToggle={playback.toggle}
         speed={playback.speed}
-        onSpeed={playback.setSpeed}
+        onSpeed={setSpeed}
         footer={
           !desktop && (
-            <nav className="mt-3 grid grid-cols-3 gap-1" aria-label="Open panel">
+            <nav className="mt-3 grid grid-cols-2 gap-1" aria-label="Open panel">
               {DRAWER_TABS.map((t) => (
                 <button
                   key={t.id}
@@ -386,56 +358,78 @@ export default function App() {
         }
       />
 
-      <Drawer open={open} desktop={desktop} tab={tab} scrollKey={showSelection ? JSON.stringify(selected) : ''} onTab={setTab} onClose={() => setOpen(false)}>
-        {tab === 'overview' &&
-          (showSelection ? (
-            cityView ? (
-              <CityPanel city={cityView} citiesDb={citiesDb} onBack={() => setSelected(null)} onSelectRoute={selectRouteFromOverview} />
+      <Drawer
+        open={open}
+        desktop={desktop}
+        tab={tab}
+        scrollKey={showSelection ? selectionKey(selected) : ''}
+        snap={snap}
+        onSnap={setSnap}
+        onTab={setTab}
+        onClose={() => setDrawerOpen(false)}
+      >
+        {tab === 'overview' && (
+          <div key={showSelection ? selectionKey(selected) : 'overview'} className="animate-rise">
+            {cityView && showSelection ? (
+              <CityPanel
+                city={cityView}
+                citiesDb={citiesDb}
+                back={backLabel(selected.back)}
+                onBack={back}
+                onSelectTrip={(t) => chooseTrip(t, { keepBack: true })}
+                onPreview={setPreview}
+              />
+            ) : tripView && showSelection ? (
+              <TripPanel
+                view={tripView}
+                citiesDb={citiesDb}
+                back={backLabel(selected.back)}
+                onBack={back}
+                onSelectLeg={(key) => chooseRoute([key], { keepBack: true })}
+                onPreview={setPreview}
+              />
+            ) : showSelection ? (
+              <RoutePanel
+                route={routeView}
+                back={backLabel(selected.back)}
+                onBack={back}
+                onSelectCity={(code) => chooseCity(code, { keepBack: true })}
+                onYear={jumpToYear}
+              />
             ) : (
-              <RoutePanel route={routeView} onBack={() => setSelected(null)} onSelectCity={selectCity} />
-            )
-          ) : (
-            <Overview
-              stats={stats}
-              year={shownYear}
-              scope={scope}
-              onScope={setScope}
-              reduced={reduced}
-              citiesDb={citiesDb}
-              onFlyCountry={flyToCountry}
-              onSelectCity={selectCity}
-              onSelectRoute={selectRouteFromOverview}
-            />
-          ))}
-        {tab === 'flights' && (
-          <FlightList
-            rawRows={rawRows}
+              <Overview
+                stats={stats}
+                year={shownYear}
+                scope={scope}
+                onScope={setScope}
+                reduced={reduced}
+                citiesDb={citiesDb}
+                onFlyCountry={flyToCountry}
+                onSelectCity={chooseCity}
+                onSelectRoute={chooseRoute}
+                onYear={jumpToYear}
+                onPreview={setPreview}
+              />
+            )}
+          </div>
+        )}
+        {tab === 'trips' && (
+          <TripList
+            trips={trips}
             citiesDb={citiesDb}
             year={shownYear}
             selected={selected}
-            onSelectRoute={selectRouteFromList}
-            onDelete={deleteFlight}
-            onExport={exportCsv}
-            onImportFile={importFile}
-            onReset={resetFlights}
-            onGoAdd={() => setTab('add')}
+            kmByTrip={tripKm}
+            onSelectTrip={(t) => chooseTrip(t, { reveal: false })}
+            onPreview={setPreview}
+            onYear={jumpToYear}
           />
         )}
-        {tab === 'add' && <AddFlightForm citiesDb={citiesDb} rawRows={rawRows} onAdd={addFlight} />}
       </Drawer>
 
       <Toasts toasts={toasts} onDismiss={dismissToast} />
-      {pendingImport && (
-        <ImportDialog
-          pending={pendingImport}
-          currentCount={rawRows.length}
-          onConfirm={confirmImport}
-          onCancel={() => setPendingImport(null)}
-        />
-      )}
-      {helpOpen && <ShortcutsHelp onClose={() => setHelpOpen(false)} />}
 
-      <LoadingScreen visible={isLoading || mapStatus === 'loading'} message="Loading your flights" />
+      <LoadingScreen visible={!hasLoaded || mapStatus === 'loading'} message="Loading the trips" />
     </div>
   )
 }

@@ -1,8 +1,8 @@
-# Flight Log
+# Travel Log
 
-![Flight Log preview](https://raw.githubusercontent.com/yi-li-yang/travel-map/main/thumb.gif)
+![Travel Log preview](https://raw.githubusercontent.com/yi-li-yang/travel-map/main/thumb.gif)
 
-Personal flight history tracker and visualizer.
+Personal travel history tracker and visualizer: flights and overland trips, for several people.
 
 Inspired by [Fog of World](https://fogofworld.app/) and [Flighty](https://flighty.com/).
 
@@ -10,26 +10,43 @@ Inspired by [Fog of World](https://fogofworld.app/) and [Flighty](https://flight
 
 ## How It Works
 
-**Visualize** — flights render as glowing great-circle routes on an interactive night-side globe. Zoom from the whole planet down to city streets: the map is vector tiles (with a satellite layer), so detail keeps increasing as you zoom.
+**Visualize** — flights render as glowing great-circle routes (fading from where you left to where you landed) and overland legs as dashed lines on an interactive night-side globe. Zoom from the whole planet down to city streets: the map is vector tiles (with a satellite layer), so detail keeps increasing as you zoom. Hover or click a route or a place and everything else steps back; a trip with several legs opens as a journey you can walk through leg by leg.
 
-**Stats** — flights, countries, airports and distance as of any year on the timeline, a passport of countries with the year you first reached each, what was new in the selected year, your home base, and records (longest flight, most-flown route, most-visited airport).
+**Explore** — a timeline of trips per year: drag it, play it, replay it, and see which years brought a first visit to a new country. The side panel lists every trip by year; hovering a row previews it on the globe.
 
-**Monitor** — connects to Gmail to detect new flight bookings automatically. Claude AI parses confirmation emails, extracts route and date, and adds it to the map.
+**Stats** — trips, countries, places and distance (flown and overland) as of any year on the timeline, laps round the Earth, a passport of countries with the year you first reached each, what was new in the selected year, your home base, and the most travelled routes and places.
 
-**Edit** — add, modify, or delete flights manually. Import/export as CSV.
+**People** — switch between Yili, Kim and Luyi at the top left. The app opens on Yili.
+
+**Monitor** (planned) — connects to Gmail to detect new flight bookings automatically. Claude AI parses confirmation emails, extracts route and date, and adds the trip to the data files.
+
+**Read only** — the web app has no forms. All changes are made to the data files and pushed (see Data).
 
 ---
 
 ## Data
 
-All flights live in a single CSV using IATA airport codes:
+Each person's trips live in `public/trips/<id>.csv`, one row per trip:
 
 ```csv
-year,origin_city,transfer_city,dest_city
-2025,EDI,DOH,HKG
+year,route,note
+2025,EDI-(DOH)-HKG,
+1988,CTU-NKG=PVG=SUZHOU=WUX=HGH=NKG-CTU,
+2010,CTU-PEK-CTU,清华
 ```
 
-`transfer_city` marks a transit hub (DOH, AMS, etc.) rather than a true visited city. Coordinates and city names are resolved from `airports.json` at runtime.
+`route` lists the stops in order. `-` is a flight and `=` is an overland leg (train, road or boat). A stop in brackets, like `(DOH)`, is a connection only, not a visited place. Airports use IATA codes from `airports.json`. Places without an airport use their name in capitals from `places.json`. Each leg is exactly what you write.
+
+### Changing the data
+
+Edit the CSV and push, or let the script do it and check your work:
+
+```bash
+npm run trips -- add yili 2027 "CTU-(HKG)-LHR"   # validates, then inserts the row in year order
+npm run trips -- check                           # validates places.json and every CSV
+```
+
+`check` also runs before every build, so a mistyped airport code fails the deploy instead of silently dropping a trip from the globe.
 
 ---
 

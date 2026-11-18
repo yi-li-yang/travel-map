@@ -11,7 +11,7 @@
   --route: #8fd3ff;
   --city: #ffb454;
   --drawer-w: 360px;
-  --dock-h: 96px;
+  --dock-h: 108px; /* App.jsx sets the real value from the screen size */
   color-scheme: dark;
 }
 
@@ -73,6 +73,11 @@ body {
   font-variant-numeric: lining-nums tabular-nums;
 }
 
+/* A planned year on the timeline: the same bar, striped, so it reads as not travelled yet */
+.hatch {
+  background-image: repeating-linear-gradient(135deg, transparent 0 2px, rgba(7, 11, 22, 0.6) 2px 4px);
+}
+
 /* Thin scrollbars that match the panels */
 .scroll {
   scrollbar-width: thin;
@@ -109,30 +114,6 @@ body {
   filter: invert(0.8);
 }
 
-/* ---- Scrubber (histogram) and generic range ---- */
-input[type='range'].plain {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 4px;
-  border-radius: 4px;
-  background: rgba(190, 205, 235, 0.18);
-}
-input[type='range'].plain::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--route);
-  border: 0;
-}
-input[type='range'].plain::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--route);
-  border: 0;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -140,11 +121,5 @@ input[type='range'].plain::-moz-range-thumb {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-}
-
-@media (max-width: 767px) {
-  :root {
-    --dock-h: 124px;
   }
 }

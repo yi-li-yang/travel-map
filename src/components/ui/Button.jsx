@@ -2,7 +2,6 @@ const VARIANTS = {
   primary: 'bg-route text-space font-semibold hover:bg-white active:bg-route',
   ghost: 'bg-white/[0.06] text-fg hover:bg-white/[0.11] active:bg-white/[0.06]',
   quiet: 'text-dim hover:text-fg hover:bg-white/[0.07]',
-  danger: 'bg-danger/10 text-danger hover:bg-danger/20',
 }
 
 const SIZES = {
@@ -16,7 +15,7 @@ export function Button({ variant = 'ghost', size = 'md', className = '', type = 
   return (
     <button
       type={type}
-      className={`inline-flex shrink-0 select-none items-center font-medium transition-colors disabled:pointer-events-none disabled:opacity-40 ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
+      className={`inline-flex shrink-0 select-none items-center font-medium transition duration-150 active:scale-[.97] disabled:pointer-events-none disabled:opacity-40 ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
       {...props}
     />
   )
