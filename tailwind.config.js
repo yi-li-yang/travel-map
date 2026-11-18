@@ -1,6 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
+  // Hover styles only where there is a real pointer, so they do not stick after a tap on a phone.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       colors: {
@@ -12,8 +14,7 @@ export default {
         route: { DEFAULT: '#8fd3ff', deep: '#4aa3df' },
         city: { DEFAULT: '#ffb454', soft: '#ffd9a0' },
         hub: '#7a86a4',
-        danger: '#ff8a80',
-        ok: '#7fe0a8',
+        ground: '#a3dcc0',
       },
       fontFamily: {
         sans: ['"Instrument Sans"', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
@@ -29,12 +30,15 @@ export default {
           from: { opacity: '0', transform: 'translateY(8px)' },
           to: { opacity: '1', transform: 'none' },
         },
-        fade: { from: { opacity: '0' }, to: { opacity: '1' } },
+        sink: {
+          from: { opacity: '1', transform: 'none' },
+          to: { opacity: '0', transform: 'translateY(-6px)' },
+        },
         spin: { to: { transform: 'rotate(360deg)' } },
       },
       animation: {
         rise: 'rise 260ms cubic-bezier(.2,.8,.2,1) both',
-        fade: 'fade 600ms ease both',
+        sink: 'sink 200ms ease-in both',
       },
     },
   },

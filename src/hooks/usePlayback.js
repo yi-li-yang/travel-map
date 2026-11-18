@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 const BASE_MS = 900
 
 /**
- * Steps `year` forward through the years that have flights.
+ * Steps `year` forward through the years that have trips.
  * `years` is the sorted list of active years; the timeline itself can show any year in range.
  */
 export function usePlayback({ years, year, setYear }) {
@@ -40,16 +40,5 @@ export function usePlayback({ years, year, setYear }) {
 
   const toggle = useCallback(() => (playing ? stop() : start()), [playing, start, stop])
 
-  // Jump to the previous/next year that has flights.
-  const step = useCallback(
-    (dir) => {
-      setPlaying(false)
-      const y = yearRef.current
-      const target = dir > 0 ? years.find((v) => v > y) : [...years].reverse().find((v) => v < y)
-      if (target !== undefined) setYear(target)
-    },
-    [years, setYear],
-  )
-
-  return { playing, speed, setSpeed, start, stop, toggle, step }
+  return { playing, speed, setSpeed, start, stop, toggle }
 }

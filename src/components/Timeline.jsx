@@ -1,8 +1,9 @@
-import { useRef } from 'react'
 import { Button } from './ui/Button.jsx'
-import { PlayIcon, PauseIcon } from './ui/Icons.jsx'
+import { Scrubber } from './Scrubber.jsx'
+import { PlayIcon, PauseIcon, ReplayIcon } from './ui/Icons.jsx'
 
 const SPEEDS = [1, 2, 4]
+const thisYear = new Date().getFullYear()
 
 // Year as rolling digits: each digit slides to its value.
 function RollingYear({ year }) {
@@ -27,94 +28,18 @@ function RollingYear({ year }) {
   )
 }
 
-/** Histogram scrubber: one bar per year, height is how much you flew. */
-function Scrubber({ minYear, maxYear, perYear, year, onYear }) {
-  const ref = useRef(null)
-  const years = []
-  for (let y = minYear; y <= maxYear; y++) years.push(y)
-  const peak = Math.max(1, ...Object.values(perYear))
-
-  const yearAt = (clientX) => {
-    const r = ref.current.getBoundingClientRect()
-    const t = Math.min(1, Math.max(0, (clientX - r.left) / r.width))
-    return Math.min(maxYear, minYear + Math.floor(t * (maxYear - minYear + 1)))
-  }
-
-  const onPointerDown = (e) => {
-    ref.current.setPointerCapture(e.pointerId)
-    onYear(yearAt(e.clientX))
-  }
-  const onPointerMove = (e) => {
-    if (e.buttons) onYear(yearAt(e.clientX))
-  }
-  const onKeyDown = (e) => {
-    const k = e.key
-    if (k === 'ArrowRight' || k === 'ArrowUp') onYear(Math.min(maxYear, year + 1))
-    else if (k === 'ArrowLeft' || k === 'ArrowDown') onYear(Math.max(minYear, year - 1))
-    else if (k === 'Home') onYear(minYear)
-    else if (k === 'End') onYear(maxYear)
-    else return
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
-  const n = perYear[year] || 0
-  return (
-    <div className="min-w-0 flex-1">
-      <div
-        ref={ref}
-        role="slider"
-        tabIndex={0}
-        aria-label="Year"
-        aria-valuemin={minYear}
-        aria-valuemax={maxYear}
-        aria-valuenow={year}
-        aria-valuetext={`${year}, ${n} ${n === 1 ? 'flight' : 'flights'}`}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onKeyDown={onKeyDown}
-        className="flex h-11 cursor-pointer touch-none items-end gap-[3px] rounded-md"
-      >
-        {years.map((y) => {
-          const count = perYear[y] || 0
-          const reached = y <= year
-          const h = count ? Math.max(14, (count / peak) * 100) : 0
-          return (
-            <div key={y} className="relative flex h-full flex-1 items-end" title={`${y}: ${count} ${count === 1 ? 'flight' : 'flights'}`}>
-              <div
-                className={`w-full rounded-[3px] transition-colors duration-300 ${
-                  reached ? 'bg-route' : 'bg-white/[0.16]'
-                } ${y === year ? 'shadow-glow' : ''}`}
-                style={{ height: count ? `${h}%` : '3px', opacity: count ? (reached ? 1 : 0.9) : 0.35 }}
-              />
-              {y === year && <div className="absolute -bottom-1 left-0 right-0 h-[2px] rounded bg-city" />}
-            </div>
-          )
-        })}
-      </div>
-      <div className="mt-1.5 flex justify-between text-[11px] text-dim">
-        <span>{minYear}</span>
-        <span>{maxYear}</span>
-      </div>
-    </div>
-  )
-}
-
-export function Timeline({ minYear, maxYear, perYear, year, onYear, playing, onToggle, speed, onSpeed, footer, className = '', style }) {
-  const planned = year > new Date().getFullYear()
+/** The dock under the globe: play, the year, a histogram you can scrub, and the playback speed. */
+export function Timeline({ minYear, maxYear, perYear, firstCountries, year, onYear, playing, onToggle, speed, onSpeed, footer, dockRef, className = '', style }) {
+  const planned = year > thisYear
+  const finished = !playing && maxYear > minYear && year >= maxYear
   const nextSpeed = () => onSpeed(SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length])
+  const action = playing ? 'Pause timeline' : finished ? 'Replay timeline' : 'Play timeline'
 
   return (
-    <section className={`panel rounded-panel p-3 md:px-4 ${className}`} style={style} aria-label="Timeline">
-      <div className="flex items-center gap-3 md:gap-4">
-        <Button
-          variant="primary"
-          size="icon"
-          onClick={onToggle}
-          aria-label={playing ? 'Pause timeline' : 'Play timeline'}
-          className="!h-12 !w-12 !rounded-full"
-        >
-          {playing ? <PauseIcon width={22} height={22} /> : <PlayIcon width={22} height={22} />}
+    <section ref={dockRef} className={`panel rounded-panel p-3 md:px-4 ${className}`} style={style} aria-label="Timeline">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 md:flex-nowrap md:gap-4">
+        <Button variant="primary" size="icon" onClick={onToggle} aria-label={action} title={action} className="!h-12 !w-12 !rounded-full">
+          {playing ? <PauseIcon width={22} height={22} /> : finished ? <ReplayIcon width={22} height={22} /> : <PlayIcon width={22} height={22} />}
         </Button>
 
         <div className="relative">
@@ -122,20 +47,20 @@ export function Timeline({ minYear, maxYear, perYear, year, onYear, playing, onT
           <span className="sr-only" aria-live="polite">
             {year}
           </span>
-          {planned && (
-            <span className="absolute -bottom-3 left-0 whitespace-nowrap text-[11px] text-city-soft">Planned trips</span>
-          )}
+          {planned && <span className="absolute -top-3 left-0 whitespace-nowrap text-[11px] text-city-soft">Planned trips</span>}
         </div>
-
-        <Scrubber minYear={minYear} maxYear={maxYear} perYear={perYear} year={year} onYear={onYear} />
 
         <button
           onClick={nextSpeed}
-          className="h-9 min-w-[44px] rounded-lg px-2 text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.07] hover:text-fg"
+          className="ml-auto h-9 min-w-[44px] rounded-lg px-2 text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.07] hover:text-fg md:order-last md:ml-0"
           aria-label={`Playback speed ${speed}×. Change speed`}
         >
           {speed}×
         </button>
+
+        <div className="order-last w-full min-w-0 md:order-none md:w-auto md:flex-1">
+          <Scrubber minYear={minYear} maxYear={maxYear} perYear={perYear} firstCountries={firstCountries} year={year} onYear={onYear} />
+        </div>
       </div>
       {footer}
     </section>

@@ -1,19 +1,33 @@
 import { Button } from './ui/Button.jsx'
-import { PlusIcon, MinusIcon, ResetViewIcon, LayersIcon } from './ui/Icons.jsx'
+import { PlusIcon, MinusIcon, ResetViewIcon, LayersIcon, SpinIcon } from './ui/Icons.jsx'
 
-export function MapControls({ onZoomIn, onZoomOut, onReset, basemap, onToggleBasemap, className = '', style }) {
+export function MapControls({ onZoomIn, onZoomOut, onReset, basemap, onToggleBasemap, spinning, onToggleSpin, className = '', style }) {
   const sat = basemap === 'satellite'
+  const on = '!bg-white/[0.12] !text-route'
   return (
     <div className={`panel flex flex-col rounded-2xl p-1 ${className}`} style={style} role="group" aria-label="Map controls">
-      <Button variant="quiet" size="icon" onClick={onZoomIn} aria-label="Zoom in">
+      <Button variant="quiet" size="icon" onClick={onZoomIn} aria-label="Zoom in" title="Zoom in">
         <PlusIcon />
       </Button>
-      <Button variant="quiet" size="icon" onClick={onZoomOut} aria-label="Zoom out">
+      <Button variant="quiet" size="icon" onClick={onZoomOut} aria-label="Zoom out" title="Zoom out">
         <MinusIcon />
       </Button>
       <Button variant="quiet" size="icon" onClick={onReset} aria-label="Reset view" title="Reset view">
         <ResetViewIcon />
       </Button>
+      {onToggleSpin && (
+        <Button
+          variant="quiet"
+          size="icon"
+          onClick={onToggleSpin}
+          aria-pressed={spinning}
+          aria-label={spinning ? 'Stop turning the globe' : 'Turn the globe slowly'}
+          title={spinning ? 'Stop turning' : 'Turn slowly'}
+          className={spinning ? on : ''}
+        >
+          <SpinIcon />
+        </Button>
+      )}
       <Button
         variant="quiet"
         size="icon"
@@ -21,7 +35,7 @@ export function MapControls({ onZoomIn, onZoomOut, onReset, basemap, onToggleBas
         aria-pressed={sat}
         aria-label={sat ? 'Switch to the night map' : 'Switch to satellite imagery'}
         title={sat ? 'Night map' : 'Satellite'}
-        className={sat ? '!bg-white/[0.12] !text-route' : ''}
+        className={sat ? on : ''}
       >
         <LayersIcon />
       </Button>

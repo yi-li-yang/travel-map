@@ -3,7 +3,7 @@ import { emptyFc } from './arcs.js'
 
 export const CITY_SOURCE = 'cities'
 
-// One feature per airport reached up to maxYear. Visits count arrivals and transfers.
+// One feature per place reached up to maxYear. Visits count arrivals and transfers.
 export function buildCityFeatures(segments, db, maxYear) {
   const map = new Map()
   const touch = (code, year, isDest) => {
@@ -31,17 +31,34 @@ export function buildCityFeatures(segments, db, maxYear) {
       country: ap.country,
       visits: Math.max(visits, 1),
       hub: ap.isHub ? 1 : 0,
+      airport: ap.kind === 'place' ? 0 : 1,
       first,
     },
     geometry: { type: 'Point', coordinates: [ap.lon, ap.lat] },
   }))
 }
 
+const NO_CODE = ['==', ['get', 'code'], '']
+const NO_YEAR = ['==', ['get', 'first'], -1]
+
 export function cityLayers() {
   const visits = ['min', ['get', 'visits'], 12]
   const isHub = ['==', ['get', 'hub'], 1]
   const scale = (a, b) => ['interpolate', ['linear'], ['zoom'], 0, a, 8, b]
   return [
+    {
+      // A soft glow on places reached for the first time in the year being shown.
+      id: 'cities-new',
+      type: 'circle',
+      source: CITY_SOURCE,
+      filter: NO_YEAR,
+      paint: {
+        'circle-radius': scale(16, 28),
+        'circle-color': COLORS.city,
+        'circle-blur': 0.9,
+        'circle-opacity': 0.5,
+      },
+    },
     {
       id: 'cities-halo',
       type: 'circle',
@@ -66,10 +83,23 @@ export function cityLayers() {
       },
     },
     {
+      id: 'cities-hover',
+      type: 'circle',
+      source: CITY_SOURCE,
+      filter: NO_CODE,
+      paint: {
+        'circle-radius': scale(9, 14),
+        'circle-color': 'rgba(0,0,0,0)',
+        'circle-stroke-color': COLORS.cityLabel,
+        'circle-stroke-width': 1.2,
+        'circle-stroke-opacity': 0.9,
+      },
+    },
+    {
       id: 'cities-selected',
       type: 'circle',
       source: CITY_SOURCE,
-      filter: ['==', ['get', 'code'], ''],
+      filter: NO_CODE,
       paint: {
         'circle-radius': scale(10, 16),
         'circle-color': 'rgba(0,0,0,0)',
@@ -106,4 +136,15 @@ export function addCityLayers(map) {
   map.addSource(CITY_SOURCE, { type: 'geojson', data: emptyFc() })
   // Cities sit above the arcs and the base-map labels.
   for (const layer of cityLayers()) map.addLayer(layer)
+}
+
+/** Ring the place that is selected and the one that is hovered (a code, or null). */
+export function setCityFocus(map, { selectedCode, hoverCode }) {
+  map.setFilter('cities-selected', ['==', ['get', 'code'], selectedCode || ''])
+  map.setFilter('cities-hover', ['==', ['get', 'code'], hoverCode && hoverCode !== selectedCode ? hoverCode : ''])
+}
+
+/** Glow the places first reached in `year` (connections left out). */
+export function setFirstVisitYear(map, year) {
+  map.setFilter('cities-new', ['all', ['==', ['get', 'first'], year], ['==', ['get', 'hub'], 0]])
 }

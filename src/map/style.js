@@ -18,6 +18,12 @@ export const COLORS = {
   route: '#8fd3ff',
   routeGlow: '#4aa3df',
   routeTransfer: '#6f8fb8',
+  // Flights fade from the origin to the destination, so a route shows which way it went.
+  routeFrom: '#5aaee6',
+  routeTo: '#d6f1ff',
+  routeTransferFrom: '#4f6f98',
+  routeTransferTo: '#93b4da',
+  ground: '#a3dcc0',
   city: '#ffb454',
   cityLabel: '#ffd9a0',
   hub: '#7a86a4',

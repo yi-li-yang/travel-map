@@ -3,6 +3,7 @@ import { COLORS, FIRST_LABEL_LAYER } from './style.js'
 
 export const ARC_SOURCE = 'arcs'
 const ARC_DURATION_MS = 800
+const DIMMED = 0.2 // how visible the other routes stay while one is in focus
 
 // Great-circle path as [lon, lat] pairs, with longitudes unwrapped so a path that
 // crosses the antimeridian stays continuous (MapLibre draws the wrapped copy).
@@ -34,17 +35,32 @@ export function legKeys(segments) {
   })
 }
 
+// Overland legs all run in one direction per pair, so the dashes of an outbound
+// and a return leg line up instead of filling each other's gaps.
+const isReversed = (props) => props.mode === 'ground' && props.from > props.to
+
+function legCoordinates(seg) {
+  const coords = arcCoordinates(seg)
+  return seg.mode === 'ground' && seg.originName > seg.destName ? coords.reverse() : coords
+}
+
+/** A leg's coordinates in the direction it was travelled (overland legs may be stored the other way round). */
+export const forwardCoords = (arc) => (isReversed(arc.props) ? arc.coords.slice().reverse() : arc.coords)
+
 export function buildArcs(segments) {
   const keys = legKeys(segments)
   return segments.map((seg, i) => ({
     key: keys[i],
+    trip: seg.rowId,
     year: seg.year,
-    coords: arcCoordinates(seg),
+    coords: legCoordinates(seg),
     props: {
       key: keys[i],
+      trip: seg.rowId,
       year: seg.year,
       repeats: seg.repeats,
       transfer: seg.isTransfer ? 1 : 0,
+      mode: seg.mode,
       routeKey: seg.routeKey,
       from: seg.originName,
       to: seg.destName,
@@ -69,32 +85,77 @@ function slice(coords, p) {
 
 const ease = (t) => 1 - Math.pow(1 - t, 3)
 
+// ---- layers ----
+
+const NONE = ['==', ['get', 'routeKey'], '']
+const isAir = ['==', ['get', 'mode'], 'air']
+const isGround = ['==', ['get', 'mode'], 'ground']
+const isConnection = ['==', ['get', 'transfer'], 1]
+const fade = (from, to) => ['interpolate', ['linear'], ['line-progress'], 0, from, 1, to]
+
+// What each layer shows when nothing is in focus. Dimming multiplies these.
+const BASE_OPACITY = {
+  'arcs-glow': ['case', isConnection, 0.12, 0.26],
+  'arcs-core': 0.95,
+  'arcs-core-connection': 0.7,
+  'arcs-ground': 0.9,
+}
+
 export function arcLayers() {
   const repeats = ['min', ['get', 'repeats'], 6]
   const widthAt = (base) => ['interpolate', ['linear'], ['zoom'], 0, ['*', base, 0.8], 6, ['*', base, 1.6]]
-  const coreColor = ['case', ['==', ['get', 'transfer'], 1], COLORS.routeTransfer, COLORS.route]
+  const round = { 'line-cap': 'round', 'line-join': 'round' }
   return [
     {
       id: 'arcs-glow',
       type: 'line',
       source: ARC_SOURCE,
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      filter: isAir,
+      layout: round,
       paint: {
         'line-color': COLORS.routeGlow,
         'line-width': widthAt(['+', 4, ['*', 0.9, repeats]]),
         'line-blur': 4,
-        'line-opacity': ['case', ['==', ['get', 'transfer'], 1], 0.12, 0.26],
+        'line-opacity': BASE_OPACITY['arcs-glow'],
       },
     },
     {
+      // line-gradient needs one layer per colour pair, since it cannot read feature properties.
       id: 'arcs-core',
       type: 'line',
       source: ARC_SOURCE,
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      filter: ['all', isAir, ['!', isConnection]],
+      layout: round,
       paint: {
-        'line-color': coreColor,
+        'line-gradient': fade(COLORS.routeFrom, COLORS.routeTo),
         'line-width': widthAt(['+', 0.9, ['*', 0.28, repeats]]),
-        'line-opacity': ['case', ['==', ['get', 'transfer'], 1], 0.6, 0.95],
+        'line-opacity': BASE_OPACITY['arcs-core'],
+      },
+    },
+    {
+      id: 'arcs-core-connection',
+      type: 'line',
+      source: ARC_SOURCE,
+      filter: ['all', isAir, isConnection],
+      layout: round,
+      paint: {
+        'line-gradient': fade(COLORS.routeTransferFrom, COLORS.routeTransferTo),
+        'line-width': widthAt(['+', 0.9, ['*', 0.28, repeats]]),
+        'line-opacity': BASE_OPACITY['arcs-core-connection'],
+      },
+    },
+    {
+      // Overland legs: dashed, no glow, so they read as a different way of travelling.
+      id: 'arcs-ground',
+      type: 'line',
+      source: ARC_SOURCE,
+      filter: isGround,
+      layout: { 'line-cap': 'butt', 'line-join': 'round' },
+      paint: {
+        'line-color': COLORS.ground,
+        'line-width': widthAt(['+', 1.1, ['*', 0.28, repeats]]),
+        'line-dasharray': [2.2, 1.6],
+        'line-opacity': BASE_OPACITY['arcs-ground'],
       },
     },
     {
@@ -104,22 +165,70 @@ export function arcLayers() {
       paint: { 'line-color': '#000', 'line-opacity': 0, 'line-width': 14 },
     },
     {
+      // A soft light under whatever is hovered or selected.
+      id: 'arcs-lit',
+      type: 'line',
+      source: ARC_SOURCE,
+      filter: NONE,
+      layout: round,
+      paint: { 'line-color': COLORS.route, 'line-width': widthAt(9), 'line-blur': 6, 'line-opacity': 0.55 },
+    },
+    {
+      id: 'arcs-hover',
+      type: 'line',
+      source: ARC_SOURCE,
+      filter: NONE,
+      layout: round,
+      paint: { 'line-color': COLORS.routeTo, 'line-width': widthAt(2), 'line-opacity': 0.95 },
+    },
+    {
       id: 'arcs-selected',
       type: 'line',
       source: ARC_SOURCE,
-      filter: ['==', ['get', 'routeKey'], ''],
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': '#ffffff', 'line-width': widthAt(2.4), 'line-opacity': 0.95 },
+      filter: NONE,
+      layout: round,
+      paint: { 'line-color': '#ffffff', 'line-width': widthAt(2.6), 'line-opacity': 1 },
     },
   ]
 }
 
 export function addArcLayers(map) {
-  map.addSource(ARC_SOURCE, { type: 'geojson', data: emptyFc() })
+  // lineMetrics lets the flights fade along their length.
+  map.addSource(ARC_SOURCE, { type: 'geojson', data: emptyFc(), lineMetrics: true })
   for (const layer of arcLayers()) map.addLayer(layer, FIRST_LABEL_LAYER)
 }
 
 export const emptyFc = () => ({ type: 'FeatureCollection', features: [] })
+
+// ---- focus: hover and selection ----
+
+/**
+ * A filter expression for "the routes this target is about", or null.
+ * A target is { routeKeys: [...] } for routes or { code } for a place and everything leaving or reaching it.
+ */
+function matchOf(target) {
+  if (target?.routeKeys?.length) return ['in', ['get', 'routeKey'], ['literal', target.routeKeys]]
+  if (target?.code) return ['any', ['==', ['get', 'from'], target.code], ['==', ['get', 'to'], target.code]]
+  return null
+}
+
+/**
+ * Light up what is hovered and selected, and dim every other route.
+ * Routes are drawn as lines; a place only dims the routes that do not touch it.
+ */
+export function setArcFocus(map, { selected, hover }) {
+  const lineOf = (t) => (t?.routeKeys?.length ? matchOf(t) : null)
+  const sel = lineOf(selected)
+  const hov = lineOf(hover)
+  map.setFilter('arcs-selected', sel ?? NONE)
+  map.setFilter('arcs-hover', hov ?? NONE)
+  map.setFilter('arcs-lit', sel && hov ? ['any', sel, hov] : (sel ?? hov ?? NONE))
+
+  const keep = matchOf(hover) ?? matchOf(selected)
+  for (const [id, base] of Object.entries(BASE_OPACITY)) {
+    map.setPaintProperty(id, 'line-opacity', keep ? ['*', base, ['case', keep, 1, DIMMED]] : base)
+  }
+}
 
 /**
  * Keeps arcs in sync with the data and the selected year, and draws newly

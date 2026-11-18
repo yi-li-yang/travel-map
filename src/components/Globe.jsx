@@ -2,8 +2,9 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState }
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { buildStyle, applyBasemap } from '../map/style.js'
-import { addArcLayers, ArcAnimator, buildArcs } from '../map/arcs.js'
-import { addCityLayers, buildCityFeatures, CITY_SOURCE } from '../map/cities.js'
+import { addArcLayers, ArcAnimator, buildArcs, forwardCoords, setArcFocus } from '../map/arcs.js'
+import { addCityLayers, buildCityFeatures, setCityFocus, setFirstVisitYear, CITY_SOURCE } from '../map/cities.js'
+import { addEffectLayers, chainPath, Effects } from '../map/effects.js'
 
 // MapLibre 6 loads its worker from a separate file, copied to public/ by scripts/copy-maplibre-worker.mjs.
 maplibregl.setWorkerUrl(new URL(`${import.meta.env.BASE_URL}vendor/maplibre/maplibre-gl-worker.mjs`, window.location.href).href)
@@ -17,40 +18,56 @@ function fitZoom(el, pad) {
   return Math.max(0.6, Math.log2(Math.max(diameter, 200) / 163))
 }
 
+const DEFAULT_CENTER = [10, 25]
 const SPIN_DEG_PER_SEC = 4
 const SPIN_IDLE_MS = 3500
+const TOUCH_REACH = 14 // px around a finger that still counts as touching a route
+
+// Where the globe starts and returns to: over the home place, tilted so it is not hidden at the pole.
+const homeCenter = (home) => (home ? [home.lon, Math.min(Math.max(home.lat, 10), 40)] : DEFAULT_CENTER)
+
+// What the map layers should focus on, for a selection or a hover target.
+const targetOf = (sel) => {
+  if (!sel) return null
+  return sel.type === 'city' ? { code: sel.code } : { routeKeys: sel.routeKeys }
+}
 
 /**
- * Full-bleed interactive globe. Draws the base map, flight arcs and city markers,
+ * Full-bleed interactive globe. Draws the base map, route arcs and city markers,
  * and reports hover/click back to the app. All camera moves happen here.
+ * `highlight` is a { routeKeys } or { code } preview coming from outside the map (a list row, say).
+ * `home` is { code, lon, lat }: when it changes (another person's trips) the camera flies there.
  */
 export const Globe = forwardRef(function Globe(
-  { segments, citiesDb, maxYear, selected, onSelect, onHover, onStatus, basemap, padding, reducedMotion, initialCenter },
+  { segments, citiesDb, maxYear, selected, highlight, onSelect, onHover, onStatus, basemap, padding, reducedMotion, autoRotate, home },
   ref,
 ) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const animatorRef = useRef(null)
-  const homeViewRef = useRef({ center: [10, 25], zoom: 1.6 })
+  const effectsRef = useRef(null)
+  const homeViewRef = useRef({ center: DEFAULT_CENTER, zoom: 1.6 })
+  const homeKeyRef = useRef('')
   const refitRef = useRef(null)
+  const rippleToken = useRef(0)
   const spinRef = useRef({ lastInteraction: 0, hovering: false })
   const [ready, setReady] = useState(false)
 
   // Always call the newest callbacks/props from long-lived map listeners.
   const live = useRef({})
-  live.current = { onSelect, onHover, onStatus, selected, reducedMotion, padding, segments }
+  live.current = { onSelect, onHover, onStatus, selected, highlight, reducedMotion, autoRotate, padding, segments, home }
 
   // Keep the globe sized to the free space, unless the person has zoomed on their own.
   const refit = () => {
     const map = mapRef.current
     const el = containerRef.current
     if (!map || !el) return
-    const home = homeViewRef.current
+    const homeView = homeViewRef.current
     const next = fitZoom(el, live.current.padding)
-    if (Math.abs(map.getZoom() - home.zoom) < 0.2 && !live.current.selected) {
+    if (Math.abs(map.getZoom() - homeView.zoom) < 0.2 && !live.current.selected) {
       map.easeTo({ zoom: next, duration: live.current.reducedMotion ? 0 : 400 })
     }
-    homeViewRef.current = { ...home, zoom: next }
+    homeViewRef.current = { ...homeView, zoom: next }
     map.setMinZoom(Math.max(0.3, next - 1.2))
   }
 
@@ -78,7 +95,8 @@ export const Globe = forwardRef(function Globe(
   useEffect(() => {
     const el = containerRef.current
     const zoom = fitZoom(el, live.current.padding)
-    const center = initialCenter || [10, 25]
+    const center = homeCenter(live.current.home)
+    homeKeyRef.current = live.current.home?.code || ''
     homeViewRef.current = { center, zoom }
 
     let map
@@ -120,6 +138,8 @@ export const Globe = forwardRef(function Globe(
     map.on('load', () => {
       addArcLayers(map)
       addCityLayers(map)
+      addEffectLayers(map)
+      effectsRef.current = new Effects(map)
       setReady(true)
       // Style and first tiles are in: the app can lift its loading cover.
       live.current.onStatus?.('ready')
@@ -136,17 +156,27 @@ export const Globe = forwardRef(function Globe(
     })
 
     // ---- picking ----
+    // A finger is wide, so on touch screens look in a box around the tap and take the nearest place.
+    const coarse = window.matchMedia?.('(pointer: coarse)').matches
     const pick = (point) => {
-      const hits = map.queryRenderedFeatures(point, { layers: ['cities-halo', 'arcs-hit'] })
-      const city = hits.find((f) => f.layer.id === 'cities-halo')
-      if (city) return { kind: 'city', ...city.properties }
+      const area = coarse ? [[point.x - TOUCH_REACH, point.y - TOUCH_REACH], [point.x + TOUCH_REACH, point.y + TOUCH_REACH]] : point
+      const hits = map.queryRenderedFeatures(area, { layers: ['cities-halo', 'arcs-hit'] })
+      const cities = hits.filter((f) => f.layer.id === 'cities-halo')
+      if (cities.length) {
+        const dist = (f) => {
+          const p = map.project(f.geometry.coordinates)
+          return Math.hypot(p.x - point.x, p.y - point.y)
+        }
+        const nearest = cities.reduce((a, b) => (dist(b) < dist(a) ? b : a))
+        return { kind: 'city', ...nearest.properties }
+      }
       const arc = hits.find((f) => f.layer.id === 'arcs-hit')
-      if (arc) return { kind: 'route', ...arc.properties }
-      return null
+      return arc ? { kind: 'route', ...arc.properties } : null
     }
 
     map.on('mousemove', (e) => {
-      const hit = pick(e.point)
+      // While dragging the globe there is nothing to hover.
+      const hit = e.originalEvent.buttons ? null : pick(e.point)
       map.getCanvas().style.cursor = hit ? 'pointer' : ''
       spinRef.current.hovering = Boolean(hit)
       live.current.onHover?.(hit ? { ...hit, x: e.point.x, y: e.point.y } : null)
@@ -169,7 +199,11 @@ export const Globe = forwardRef(function Globe(
     for (const evt of ['mousedown', 'touchstart', 'wheel']) map.on(evt, touch)
     // Camera moves we start ourselves (fly-to, padding changes) also hold the spin back.
     map.on('movestart', () => {
-      if (!spinRef.current.spinning) touch()
+      if (spinRef.current.spinning) return
+      touch()
+      // The pointer is no longer over what it was when the globe starts to move.
+      spinRef.current.hovering = false
+      live.current.onHover?.(null)
     })
     map.on('moveend', () => {
       if (!spinRef.current.spinning) touch()
@@ -185,7 +219,7 @@ export const Globe = forwardRef(function Globe(
       const s = spinRef.current
       const l = live.current
       if (
-        l.reducedMotion || l.selected || s.hovering || document.hidden ||
+        l.reducedMotion || !l.autoRotate || l.selected || l.highlight || s.hovering || document.hidden ||
         now - s.lastInteraction < SPIN_IDLE_MS ||
         map.getZoom() > homeViewRef.current.zoom + 1.2 ||
         map.isMoving()
@@ -202,6 +236,8 @@ export const Globe = forwardRef(function Globe(
       cancelAnimationFrame(raf)
       animator.stop()
       animatorRef.current = null
+      effectsRef.current?.stop()
+      effectsRef.current = null
       mapRef.current = null
       map.remove()
       setReady(false)
@@ -220,7 +256,20 @@ export const Globe = forwardRef(function Globe(
       type: 'FeatureCollection',
       features: buildCityFeatures(segments, citiesDb, maxYear),
     })
+    setFirstVisitYear(map, maxYear)
   }, [ready, arcs, segments, citiesDb, maxYear, reducedMotion])
+
+  // ---- another person's trips: the globe returns to their home ----
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map) return
+    const key = home?.code || ''
+    if (homeKeyRef.current === key) return
+    homeKeyRef.current = key
+    const center = homeCenter(home)
+    homeViewRef.current = { ...homeViewRef.current, center }
+    map.flyTo({ center, zoom: homeViewRef.current.zoom, duration: reducedMotion ? 0 : 1600, essential: true })
+  }, [ready, home, reducedMotion])
 
   // ---- base map toggle ----
   useEffect(() => {
@@ -232,26 +281,57 @@ export const Globe = forwardRef(function Globe(
   useEffect(() => {
     const map = mapRef.current
     if (!ready || !map) return
-    const home = homeViewRef.current
+    const homeView = homeViewRef.current
     const next = fitZoom(containerRef.current, padding)
-    const follow = Math.abs(map.getZoom() - home.zoom) < 0.2 && !live.current.selected
-    homeViewRef.current = { ...home, zoom: next }
+    const follow = Math.abs(map.getZoom() - homeView.zoom) < 0.2 && !live.current.selected
+    homeViewRef.current = { ...homeView, zoom: next }
     map.setMinZoom(Math.max(0.3, next - 1.2))
     map.easeTo({ padding, ...(follow ? { zoom: next } : {}), duration: reducedMotion ? 0 : 450 })
   }, [ready, padding, reducedMotion])
 
-  // ---- selection: highlight + camera ----
+  // ---- focus: light up what is selected or hovered, dim the rest ----
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map) return
+    const hover = highlight || null
+    setArcFocus(map, { selected: targetOf(selected), hover })
+    setCityFocus(map, { selectedCode: selected?.type === 'city' ? selected.code : null, hoverCode: hover?.code || null })
+  }, [ready, selected, highlight])
+
+  // ---- a light travels along the selected route ----
+  useEffect(() => {
+    const fx = effectsRef.current
+    if (!ready || !fx) return
+    fx.setReduced(Boolean(reducedMotion))
+    let path = null
+    if (selected?.type === 'route') {
+      const legs = selected.tripId
+        ? arcs.filter((a) => a.trip === selected.tripId)
+        : [arcs.find((a) => a.props.routeKey === selected.routeKeys[0])].filter(Boolean)
+      const shown = legs.filter((a) => a.year <= maxYear)
+      if (shown.length) path = chainPath(shown.map(forwardCoords))
+    }
+    fx.showRoute(path)
+  }, [ready, selected, arcs, maxYear, reducedMotion])
+
+  // ---- selection: camera ----
   useEffect(() => {
     const map = mapRef.current
     if (!ready || !map) return
     const duration = reducedMotion ? 0 : 1300
     const keys = selected?.type === 'route' ? selected.routeKeys : []
-    map.setFilter('arcs-selected', ['in', ['get', 'routeKey'], ['literal', keys.length ? keys : ['']]])
-    map.setFilter('cities-selected', ['==', ['get', 'code'], selected?.type === 'city' ? selected.code : ''])
+    rippleToken.current += 1
 
     if (selected?.type === 'city') {
       const ap = citiesDb[selected.code]
-      if (ap) map.flyTo({ center: [ap.lon, ap.lat], zoom: Math.max(map.getZoom(), 4.4), duration, essential: true })
+      if (ap) {
+        map.flyTo({ center: [ap.lon, ap.lat], zoom: Math.max(map.getZoom(), 4.4), duration, essential: true })
+        const token = rippleToken.current
+        // Ring the place once the camera has arrived.
+        map.once('moveend', () => {
+          if (token === rippleToken.current) effectsRef.current?.ripple(ap.lon, ap.lat)
+        })
+      }
     } else if (selected?.type === 'route') {
       const legs = arcs.filter((a) => keys.includes(a.props.routeKey))
       if (!legs.length) return
@@ -270,9 +350,8 @@ export const Globe = forwardRef(function Globe(
         ref={containerRef}
         className="h-full w-full"
         role="application"
-        aria-label="Interactive globe of your flights. Drag to rotate, scroll to zoom."
+        aria-label="Interactive globe of your trips. Drag to rotate, scroll to zoom."
       />
     </div>
   )
 })
-
