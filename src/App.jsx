@@ -10,7 +10,6 @@ import { MapControls } from './components/MapControls.jsx'
 import { Tooltip } from './components/Tooltip.jsx'
 import { LoadingScreen, ErrorScreen, WebglError, EmptyHero } from './components/Screens.jsx'
 import { UserSwitcher } from './components/UserSwitcher.jsx'
-import { Starfield } from './components/ui/Starfield.jsx'
 import { Toasts } from './components/ui/Toasts.jsx'
 import { Button } from './components/ui/Button.jsx'
 import { PanelIcon } from './components/ui/Icons.jsx'
@@ -266,9 +265,7 @@ export default function App() {
   if (error) return <ErrorScreen message={error} onRetry={retry} />
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-space" style={{ '--dock-h': `${dockH}px` }}>
-      <Starfield />
-
+    <div className="fixed inset-0 overflow-hidden bg-ground" style={{ '--dock-h': `${dockH}px` }}>
       {hasLoaded && (
         <Globe
           ref={globeRef}
@@ -291,12 +288,13 @@ export default function App() {
 
       {/* Brand */}
       <header className="pointer-events-none absolute left-4 top-4 z-10 md:left-6 md:top-5">
-        <h1 className="display text-[28px] leading-none md:text-[32px]">Travel Log</h1>
-        <p className="mt-1.5 text-[13px] text-dim">
-          {trips.length} {trips.length === 1 ? 'trip' : 'trips'} · {placeCount} {placeCount === 1 ? 'place' : 'places'}
+        <h1 className="stop text-[25px] font-semibold leading-[1.15] md:text-[31px]">Travel Log</h1>
+        <p className="mt-2 text-[14px] text-muted">
+          <span className="num">{trips.length}</span> {trips.length === 1 ? 'trip' : 'trips'} · <span className="num">{placeCount}</span>{' '}
+          {placeCount === 1 ? 'place' : 'places'}
         </p>
         {updated && (
-          <p className="mt-0.5 text-[12px] text-dim">
+          <p className="text-[12px] text-muted">
             Updated {new Date(updated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
           </p>
         )}
@@ -313,7 +311,7 @@ export default function App() {
       )}
 
       <MapControls
-        className="absolute z-10 transition-[right] duration-300"
+        className="absolute z-10 transition-[right] duration-panel"
         style={{ right: dockRight, bottom: dockH + 12, display: sheetOpen ? 'none' : undefined }}
         onZoomIn={() => globeRef.current?.zoomBy(1)}
         onZoomOut={() => globeRef.current?.zoomBy(-1)}
@@ -334,7 +332,7 @@ export default function App() {
       {/* Timeline dock */}
       <Timeline
         dockRef={setDockEl}
-        className="absolute z-20 transition-[right] duration-300"
+        className="absolute z-20 transition-[right] duration-panel"
         style={{ left: 16, right: dockRight, bottom: desktop ? 16 : 'calc(8px + env(safe-area-inset-bottom))' }}
         minYear={minYear}
         maxYear={maxYear}
@@ -354,7 +352,7 @@ export default function App() {
                 <button
                   key={t.id}
                   onClick={() => goTab(t.id)}
-                  className="h-11 rounded-xl text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.07] hover:text-fg"
+                  className="h-11 text-[14px] font-medium text-muted transition-colors duration-fast ease-out hover:bg-surface hover:text-ink"
                 >
                   {t.label}
                 </button>

@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 
 // Accessible tab list: arrow keys move between tabs, Home/End jump to the ends.
+// The selected tab carries the accent as a 2px rule under its label.
 export function Tabs({ tabs, value, onChange, label = 'Sections', idPrefix = 'tab' }) {
   const refs = useRef({})
 
@@ -19,7 +20,7 @@ export function Tabs({ tabs, value, onChange, label = 'Sections', idPrefix = 'ta
   }
 
   return (
-    <div role="tablist" aria-label={label} onKeyDown={onKeyDown} className="flex gap-1 rounded-xl bg-white/[0.05] p-1">
+    <div role="tablist" aria-label={label} onKeyDown={onKeyDown} className="flex gap-6 border-b border-rule">
       {tabs.map((t) => {
         const active = t.id === value
         return (
@@ -32,8 +33,8 @@ export function Tabs({ tabs, value, onChange, label = 'Sections', idPrefix = 'ta
             aria-controls={`${idPrefix}-panel`}
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(t.id)}
-            className={`h-9 flex-1 rounded-lg text-[13px] font-medium transition-colors ${
-              active ? 'bg-white/[0.12] text-fg' : 'text-dim hover:text-fg'
+            className={`-mb-px h-10 border-b-2 text-[14px] font-medium transition-colors duration-fast ease-out ${
+              active ? 'border-signal text-ink' : 'border-transparent text-muted hover:text-ink'
             }`}
           >
             {t.label}

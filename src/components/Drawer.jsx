@@ -28,10 +28,10 @@ export function Drawer({ open, desktop, tab, scrollKey, snap = 'half', onSnap, o
   const style = {
     transform: open ? 'none' : hiddenTransform,
     visibility: open ? 'visible' : 'hidden',
-    transition: `transform 320ms cubic-bezier(.2,.8,.2,1), height 280ms cubic-bezier(.2,.8,.2,1), visibility 0s linear ${open ? '0s' : '320ms'}`,
+    transition: `transform var(--panel) var(--out), height var(--panel) var(--out), visibility 0s linear ${open ? '0s' : 'var(--panel)'}`,
     ...(desktop ? null : { height: `${SHEET_HEIGHT[snap] * 100}dvh` }),
   }
-  const placement = desktop ? 'right-4 top-4 bottom-4 w-[var(--drawer-w)] rounded-panel' : 'inset-x-0 bottom-0 rounded-t-panel'
+  const placement = desktop ? 'right-4 top-4 bottom-4 w-[var(--drawer-w)]' : 'inset-x-0 bottom-0'
 
   const handle = {
     onPointerDown: (e) => {
@@ -69,10 +69,10 @@ export function Drawer({ open, desktop, tab, scrollKey, snap = 'half', onSnap, o
           className="mx-auto flex h-7 w-24 shrink-0 touch-none items-center justify-center"
           aria-label={snap === 'half' ? 'Make the panel smaller' : 'Make the panel larger'}
         >
-          <span className="h-1 w-10 rounded-full bg-white/25" aria-hidden="true" />
+          <span className="h-1 w-10 bg-edge" aria-hidden="true" />
         </button>
       )}
-      <div className={`flex shrink-0 items-center gap-2 p-3 pb-4 ${desktop ? '' : 'pt-0'}`}>
+      <div className={`flex shrink-0 items-center gap-2 px-6 pb-4 ${desktop ? 'pt-2' : 'pt-0'}`}>
         <div className="min-w-0 flex-1">
           <Tabs tabs={DRAWER_TABS} value={tab} onChange={onTab} label="Panel sections" idPrefix="drawer" />
         </div>

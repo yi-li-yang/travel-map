@@ -8,13 +8,13 @@ import { GROUND, isAirport, tripRouteKeys } from '../data/route.js'
 export function CityPanel({ city, citiesDb, back, onBack, onSelectTrip, onPreview }) {
   if (!city) return null
   return (
-    <div className="px-5 pb-6">
+    <div className="px-6 pb-6">
       <Back onClick={onBack} label={back} />
-      <h2 className="display text-[40px] leading-[1.05]">{city.city || city.code}</h2>
-      <p className="mt-1 text-[13px] text-dim">
+      <h2 className="text-[25px] font-semibold leading-[1.15]">{city.city || city.code}</h2>
+      <p className="mt-1 text-[14px] text-muted">
         {isAirport(city) ? (
           <>
-            {city.name} <span className="text-fg">({city.code})</span>
+            {city.name} <span className="num text-ink">({city.code})</span>
           </>
         ) : (
           'No airport'
@@ -23,28 +23,28 @@ export function CityPanel({ city, citiesDb, back, onBack, onSelectTrip, onPrevie
         {city.isHub && ' · connection only'}
       </p>
 
-      <div className="mt-5 grid grid-cols-3 gap-4">
+      <div className="mt-6 grid grid-cols-3 gap-4">
         <Stat value={city.visits} label={city.visits === 1 ? 'arrival' : 'arrivals'} />
         <Stat value={city.departures} label={city.departures === 1 ? 'departure' : 'departures'} />
         <Stat value={city.firstYear ?? '–'} label="first year" />
       </div>
       {city.lastYear && city.lastYear !== city.firstYear && (
-        <p className="mt-4 text-[13px] text-dim">
-          Most recently in <span className="text-fg">{city.lastYear}</span>
+        <p className="mt-4 text-[14px] text-muted">
+          Most recently in <span className="num text-ink">{city.lastYear}</span>
         </p>
       )}
 
-      <h3 className="mb-2 mt-7 text-[13px] font-semibold">Trips through here</h3>
+      <h3 className="label mb-2 mt-8">Trips through here</h3>
       <ul className="-mx-2">
         {city.trips.map((t) => (
           <li key={t.id}>
             <button
               onClick={() => onSelectTrip(t)}
               {...previewProps(onPreview, { routeKeys: tripRouteKeys(t) })}
-              className="flex w-full items-baseline gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-white/[0.06]"
+              className="flex w-full items-baseline gap-3 px-2 py-2 text-left transition-colors duration-fast ease-out hover:bg-surface"
             >
-              <span className="w-10 shrink-0 text-[13px] text-dim">{t.year}</span>
-              <span className="min-w-0 flex-1 text-[13px] leading-snug">
+              <span className="num w-10 shrink-0 text-[14px] text-muted">{t.year}</span>
+              <span className="min-w-0 flex-1 text-[14px] leading-snug">
                 <RouteChain trip={t} citiesDb={citiesDb} highlight={city.code} />
               </span>
             </button>
@@ -63,28 +63,28 @@ export function RoutePanel({ route, back, onBack, onSelectCity, onYear }) {
   const verb = ground ? 'travelled' : 'flown'
   const uniqueYears = [...new Set(route.years)]
   return (
-    <div className="px-5 pb-6">
+    <div className="px-6 pb-6">
       <Back onClick={onBack} label={back} />
-      <h2 className="display text-[36px] leading-[1.08]">
-        <button onClick={() => onSelectCity(route.from)} className="rounded transition-colors hover:text-route">
+      <h2 className="text-[25px] font-semibold leading-[1.15]">
+        <button onClick={() => onSelectCity(route.from)} className="transition-colors hover:text-ink hover:underline">
           {route.fromCity}
         </button>
-        <span className="text-dim">{ground ? ' ⇢ ' : ' → '}</span>
-        <button onClick={() => onSelectCity(route.to)} className="rounded transition-colors hover:text-route">
+        <span className="text-muted">{ground ? ' ⇢ ' : ' → '}</span>
+        <button onClick={() => onSelectCity(route.to)} className="transition-colors hover:text-ink hover:underline">
           {route.toCity}
         </button>
       </h2>
-      <p className="mt-1 text-[13px] text-dim">
+      <p className="mt-1 text-[14px] text-muted">
         {ground ? 'Overland, straight-line distance' : `Flight, ${route.from} to ${route.to} · about ${flightTime(route.km)}`}
       </p>
-      <div className="mt-5 grid grid-cols-2 gap-4">
+      <div className="mt-6 grid grid-cols-2 gap-4">
         <Stat value={formatKm(route.km)} label="kilometres each way" />
         <Stat value={times || '–'} label={times === 1 ? `time ${verb}` : `times ${verb}`} />
       </div>
       {times > 0 && (
         <>
-          <p className="mb-2 mt-6 text-[13px] text-dim">{ground ? 'Travelled' : 'Flown'} in</p>
-          <ul className="flex flex-wrap gap-1.5">
+          <p className="label mb-2 mt-8">{ground ? 'Travelled' : 'Flown'} in</p>
+          <ul className="flex flex-wrap gap-2">
             {uniqueYears.map((y) => {
               const n = route.years.filter((v) => v === y).length
               return (
@@ -92,10 +92,10 @@ export function RoutePanel({ route, back, onBack, onSelectCity, onYear }) {
                   <button
                     onClick={() => onYear(y)}
                     title={`Show the globe as of ${y}`}
-                    className="rounded-lg bg-white/[0.06] px-2.5 py-1 text-[12.5px] transition-colors hover:bg-white/[0.12]"
+                    className="num border border-edge px-2 py-1 text-[14px] transition-colors duration-fast ease-out hover:bg-surface"
                   >
                     {y}
-                    {n > 1 && <span className="ml-1 text-dim">×{n}</span>}
+                    {n > 1 && <span className="ml-1 text-[12px] text-muted">×{n}</span>}
                   </button>
                 </li>
               )

@@ -1,9 +1,9 @@
 import { greatCirclePoints } from '../utils/geo.js'
-import { COLORS, FIRST_LABEL_LAYER } from './style.js'
+import { COLORS, FIRST_LABEL_LAYER, withAlpha } from './style.js'
 
 export const ARC_SOURCE = 'arcs'
 const ARC_DURATION_MS = 800
-const DIMMED = 0.2 // how visible the other routes stay while one is in focus
+const DIMMED = 0.22 // how visible the other routes stay while one is in focus
 
 // Great-circle path as [lon, lat] pairs, with longitudes unwrapped so a path that
 // crosses the antimeridian stays continuous (MapLibre draws the wrapped copy).
@@ -95,65 +95,54 @@ const fade = (from, to) => ['interpolate', ['linear'], ['line-progress'], 0, fro
 
 // What each layer shows when nothing is in focus. Dimming multiplies these.
 const BASE_OPACITY = {
-  'arcs-glow': ['case', isConnection, 0.12, 0.26],
-  'arcs-core': 0.95,
-  'arcs-core-connection': 0.7,
-  'arcs-ground': 0.9,
+  'arcs-core': 1,
+  'arcs-core-connection': 1,
+  'arcs-ground': 0.95,
 }
 
 export function arcLayers() {
   const repeats = ['min', ['get', 'repeats'], 6]
   const widthAt = (base) => ['interpolate', ['linear'], ['zoom'], 0, ['*', base, 0.8], 6, ['*', base, 1.6]]
   const round = { 'line-cap': 'round', 'line-join': 'round' }
+  const flight = COLORS.flight
   return [
     {
-      id: 'arcs-glow',
-      type: 'line',
-      source: ARC_SOURCE,
-      filter: isAir,
-      layout: round,
-      paint: {
-        'line-color': COLORS.routeGlow,
-        'line-width': widthAt(['+', 4, ['*', 0.9, repeats]]),
-        'line-blur': 4,
-        'line-opacity': BASE_OPACITY['arcs-glow'],
-      },
-    },
-    {
       // line-gradient needs one layer per colour pair, since it cannot read feature properties.
+      // A flight fades in from its origin, so the line shows which way it went. No glow: the line is the mark.
       id: 'arcs-core',
       type: 'line',
       source: ARC_SOURCE,
       filter: ['all', isAir, ['!', isConnection]],
       layout: round,
       paint: {
-        'line-gradient': fade(COLORS.routeFrom, COLORS.routeTo),
-        'line-width': widthAt(['+', 0.9, ['*', 0.28, repeats]]),
+        'line-gradient': fade(withAlpha(flight, 0.3), flight),
+        'line-width': widthAt(['+', 1, ['*', 0.3, repeats]]),
         'line-opacity': BASE_OPACITY['arcs-core'],
       },
     },
     {
+      // Legs of a connecting flight: the same colour, fainter.
       id: 'arcs-core-connection',
       type: 'line',
       source: ARC_SOURCE,
       filter: ['all', isAir, isConnection],
       layout: round,
       paint: {
-        'line-gradient': fade(COLORS.routeTransferFrom, COLORS.routeTransferTo),
-        'line-width': widthAt(['+', 0.9, ['*', 0.28, repeats]]),
+        'line-gradient': fade(withAlpha(flight, 0.15), withAlpha(flight, 0.55)),
+        'line-width': widthAt(['+', 1, ['*', 0.3, repeats]]),
         'line-opacity': BASE_OPACITY['arcs-core-connection'],
       },
     },
     {
-      // Overland legs: dashed, no glow, so they read as a different way of travelling.
+      // Overland legs: dashed, in their own colour, so they read as a different way of travelling.
       id: 'arcs-ground',
       type: 'line',
       source: ARC_SOURCE,
       filter: isGround,
       layout: { 'line-cap': 'butt', 'line-join': 'round' },
       paint: {
-        'line-color': COLORS.ground,
-        'line-width': widthAt(['+', 1.1, ['*', 0.28, repeats]]),
+        'line-color': COLORS.overland,
+        'line-width': widthAt(['+', 1.2, ['*', 0.3, repeats]]),
         'line-dasharray': [2.2, 1.6],
         'line-opacity': BASE_OPACITY['arcs-ground'],
       },
@@ -165,13 +154,13 @@ export function arcLayers() {
       paint: { 'line-color': '#000', 'line-opacity': 0, 'line-width': 14 },
     },
     {
-      // A soft light under whatever is hovered or selected.
+      // A casing in the ground colour under whatever is hovered or selected, so it stands clear of the others.
       id: 'arcs-lit',
       type: 'line',
       source: ARC_SOURCE,
       filter: NONE,
       layout: round,
-      paint: { 'line-color': COLORS.route, 'line-width': widthAt(9), 'line-blur': 6, 'line-opacity': 0.55 },
+      paint: { 'line-color': COLORS.page, 'line-width': widthAt(5), 'line-opacity': 0.85 },
     },
     {
       id: 'arcs-hover',
@@ -179,15 +168,16 @@ export function arcLayers() {
       source: ARC_SOURCE,
       filter: NONE,
       layout: round,
-      paint: { 'line-color': COLORS.routeTo, 'line-width': widthAt(2), 'line-opacity': 0.95 },
+      paint: { 'line-color': COLORS.hover, 'line-width': widthAt(2), 'line-opacity': 1 },
     },
     {
+      // The one selection, in the accent.
       id: 'arcs-selected',
       type: 'line',
       source: ARC_SOURCE,
       filter: NONE,
       layout: round,
-      paint: { 'line-color': '#ffffff', 'line-width': widthAt(2.6), 'line-opacity': 1 },
+      paint: { 'line-color': COLORS.focus, 'line-width': widthAt(2.4), 'line-opacity': 1 },
     },
   ]
 }

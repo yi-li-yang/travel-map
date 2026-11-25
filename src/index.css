@@ -2,17 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Colours, fonts and motion come from src/vp/tokens.css (Yili's visual system). See DESIGN.md. */
+
 :root {
-  --space: #070b16;
-  --ink: #0e1526;
-  --line: rgba(190, 205, 235, 0.12);
-  --fg: #e8ecf5;
-  --dim: #8d97b0;
-  --route: #8fd3ff;
-  --city: #ffb454;
   --drawer-w: 360px;
   --dock-h: 108px; /* App.jsx sets the real value from the screen size */
-  color-scheme: dark;
 }
 
 * {
@@ -25,70 +19,85 @@ body,
   height: 100%;
 }
 
+/* Dense panels: the system's "small" style is the base size here. */
 body {
   margin: 0;
-  background: var(--space);
-  color: var(--fg);
-  font-family: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans);
   font-size: 14px;
-  line-height: 1.45;
-  font-variant-numeric: tabular-nums;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
   overscroll-behavior: none;
 }
 
 ::placeholder {
-  color: #66708a;
+  color: var(--muted);
   opacity: 1;
 }
 
 ::selection {
-  background: rgba(143, 211, 255, 0.3);
+  background: var(--rule);
 }
 
-/* Visible keyboard focus everywhere, no outline for mouse users */
+/* Visible keyboard focus everywhere, in the accent; no outline for mouse users */
 :focus {
   outline: none;
 }
 :focus-visible {
-  outline: 2px solid var(--route);
-  outline-offset: 2px;
-  border-radius: 6px;
+  outline: var(--focus-width) solid var(--signal);
+  outline-offset: var(--focus-offset);
 }
 
-/* Floating glass panel */
+/* A panel that floats over the globe: solid, square, one hairline, the one float shadow */
 .panel {
-  background: rgba(14, 21, 38, 0.74);
-  -webkit-backdrop-filter: blur(18px) saturate(1.25);
-  backdrop-filter: blur(18px) saturate(1.25);
-  border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 18px 50px -12px rgba(0, 0, 0, 0.65);
+  background: var(--raised);
+  border: 1px solid var(--rule);
+  box-shadow: var(--float);
 }
 
-.display {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  font-variant-numeric: lining-nums tabular-nums;
+/* Numbers that sit in a column or change: monospace, so they do not shift */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Spaced capitals over a group */
+.label {
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* The project's full stop: a square in the accent, 0.22 of the type size, on the baseline */
+.stop::after {
+  content: '';
+  display: inline-block;
+  width: 0.22em;
+  height: 0.22em;
+  margin-left: 0.1em;
+  background: var(--signal);
 }
 
 /* A planned year on the timeline: the same bar, striped, so it reads as not travelled yet */
 .hatch {
-  background-image: repeating-linear-gradient(135deg, transparent 0 2px, rgba(7, 11, 22, 0.6) 2px 4px);
+  background-image: repeating-linear-gradient(135deg, transparent 0 2px, var(--ground) 2px 4px);
 }
 
-/* Thin scrollbars that match the panels */
+/* Thin square scrollbars */
 .scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(190, 205, 235, 0.25) transparent;
+  scrollbar-color: var(--rule) transparent;
 }
 .scroll::-webkit-scrollbar {
   width: 8px;
 }
 .scroll::-webkit-scrollbar-thumb {
-  background: rgba(190, 205, 235, 0.22);
-  border-radius: 8px;
+  background: var(--rule);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
@@ -101,17 +110,18 @@ body {
   bottom: calc(var(--dock-h) + 12px);
   left: 8px;
 }
-.maplibregl-ctrl-attrib {
-  background: rgba(14, 21, 38, 0.6) !important;
-  color: var(--dim) !important;
-  font-size: 10px;
-  border-radius: 8px;
+.maplibregl-ctrl-attrib,
+.maplibregl-ctrl-attrib.maplibregl-compact {
+  background: var(--raised) !important;
+  color: var(--muted) !important;
+  font-size: 12px;
+  border-radius: 0 !important;
 }
 .maplibregl-ctrl-attrib a {
-  color: var(--dim) !important;
+  color: var(--muted) !important;
 }
 .maplibregl-ctrl-attrib-button {
-  filter: invert(0.8);
+  filter: invert(0.75);
 }
 
 @media (prefers-reduced-motion: reduce) {

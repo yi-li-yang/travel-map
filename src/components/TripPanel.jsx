@@ -10,40 +10,40 @@ export function TripPanel({ view, citiesDb, back, onBack, onSelectLeg, onPreview
   const { trip, legs, km, airKm, groundKm } = view
   const name = (c) => citiesDb[c]?.city || c
   return (
-    <div className="px-5 pb-6">
+    <div className="px-6 pb-6">
       <Back onClick={onBack} label={back} />
-      <h2 className="display text-[32px] leading-[1.12]">
+      <h2 className="text-[20px] font-semibold leading-[1.15]">
         <RouteChain trip={trip} citiesDb={citiesDb} />
       </h2>
-      <p className="mt-2 text-[13px] text-dim">
-        {trip.year}
-        {trip.note && <span className="text-fg/80"> · {trip.note}</span>}
+      <p className="mt-2 text-[14px] text-muted">
+        <span className="num">{trip.year}</span>
+        {trip.note && <span className="text-ink"> · {trip.note}</span>}
       </p>
 
-      <div className="mt-5 grid grid-cols-2 gap-4">
+      <div className="mt-6 grid grid-cols-2 gap-4">
         <Stat value={formatKm(km)} label="kilometres in all" />
         <Stat value={legs.length} label="legs" />
       </div>
       {airKm > 0 && groundKm > 0 && (
-        <p className="mt-4 text-[13px] text-dim">
-          <span className="text-fg">{formatKm(airKm)} km</span> flown and <span className="text-fg">{formatKm(groundKm)} km</span> overland
+        <p className="mt-4 text-[14px] text-muted">
+          <span className="num text-ink">{formatKm(airKm)}</span> km flown and <span className="num text-ink">{formatKm(groundKm)}</span> km overland
         </p>
       )}
 
-      <h3 className="mb-2 mt-7 text-[13px] font-semibold">Legs</h3>
+      <h3 className="label mb-2 mt-8">Legs</h3>
       <ol className="-mx-2">
         {legs.map((l, i) => (
           <li key={i}>
             <button
               onClick={() => onSelectLeg(l.key)}
               {...previewProps(onPreview, { routeKeys: [l.key] })}
-              className="flex w-full items-baseline gap-3 rounded-lg px-2 py-2 text-left text-[13px] transition-colors hover:bg-white/[0.06]"
+              className="flex w-full items-baseline gap-3 px-2 py-2 text-left text-[14px] transition-colors duration-fast ease-out hover:bg-surface"
             >
-              <span className="w-5 shrink-0 text-dim">{i + 1}</span>
-              <span className={`min-w-0 flex-1 ${l.via ? 'text-dim' : ''}`}>
-                {name(l.from)} <span className="text-dim">{l.mode === GROUND ? '⇢' : '→'}</span> {name(l.to)}
+              <span className="num w-5 shrink-0 text-muted">{i + 1}</span>
+              <span className={`min-w-0 flex-1 ${l.via ? 'text-muted' : ''}`}>
+                {name(l.from)} <span className="text-muted">{l.mode === GROUND ? '⇢' : '→'}</span> {name(l.to)}
               </span>
-              <span className="shrink-0 text-dim">{formatKm(l.km)} km</span>
+              <span className="num shrink-0 text-muted">{formatKm(l.km)} km</span>
             </button>
           </li>
         ))}

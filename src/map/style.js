@@ -1,32 +1,39 @@
-// MapLibre style for the globe: a dark "night side" chart on OpenFreeMap vector
+// MapLibre style for the globe: a dark, matte stone chart on OpenFreeMap vector
 // tiles, with an optional satellite layer. Vector tiles are re-fetched at higher
 // detail as you zoom, so coastlines, borders and labels stay sharp at every scale.
 
+// Every colour comes from Yili's visual system (src/vp/tokens.css), read when the map is built,
+// so the map follows the system instead of holding its own copies of the values.
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim()
+
+/** A token colour with an alpha, for MapLibre, which cannot read CSS custom properties. */
+export function withAlpha(hex, a) {
+  const n = parseInt(hex.slice(1), 16)
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`
+}
+
 export const COLORS = {
-  space: '#070b16',
-  land: '#1a2542',
-  ice: '#26324f',
-  water: '#08101f',
-  coast: 'rgba(143, 211, 255, 0.28)',
-  border: 'rgba(170, 190, 232, 0.30)',
-  borderMinor: 'rgba(170, 190, 232, 0.14)',
-  road: 'rgba(150, 170, 215, 0.20)',
-  building: '#202c4c',
-  label: '#b4c0dc',
-  labelDim: '#7d8aa8',
-  halo: '#070b16',
-  route: '#8fd3ff',
-  routeGlow: '#4aa3df',
-  routeTransfer: '#6f8fb8',
-  // Flights fade from the origin to the destination, so a route shows which way it went.
-  routeFrom: '#5aaee6',
-  routeTo: '#d6f1ff',
-  routeTransferFrom: '#4f6f98',
-  routeTransferTo: '#93b4da',
-  ground: '#a3dcc0',
-  city: '#ffb454',
-  cityLabel: '#ffd9a0',
-  hub: '#7a86a4',
+  // The basemap: matte stone. The page is the ground, the ocean one step up, land one more.
+  get page() { return cssVar('ground') },
+  get water() { return cssVar('surface') },
+  get land() { return cssVar('raised') },
+  get ice() { return cssVar('rule') },
+  get coast() { return cssVar('rule') },
+  get border() { return withAlpha(cssVar('edge'), 0.55) },
+  get borderMinor() { return cssVar('rule') },
+  get road() { return cssVar('rule') },
+  get building() { return cssVar('rule') },
+  get label() { return cssVar('muted') },
+  get halo() { return cssVar('ground') },
+  // The data: flights in sky, overland legs in spruce, places in ochre, connections in muted.
+  get flight() { return cssVar('data-sky') },
+  get overland() { return cssVar('data-spruce') },
+  get place() { return cssVar('data-ochre') },
+  get placeLabel() { return cssVar('ink') },
+  get hub() { return cssVar('muted') },
+  // What answers the pointer: hover in ink, the one selection in the accent.
+  get hover() { return cssVar('ink') },
+  get focus() { return cssVar('signal') },
 }
 
 const OFM = 'https://tiles.openfreemap.org'
@@ -34,8 +41,6 @@ const OFM = 'https://tiles.openfreemap.org'
 // Layers that belong to the stylised vector base map (hidden in satellite mode).
 export const VECTOR_LAYERS = [
   'land-ice',
-  'land-wood',
-  'land-park',
   'water',
   'coast',
   'polar-cap',
@@ -53,13 +58,13 @@ const labelPaint = (color = COLORS.label) => ({
   'text-color': color,
   'text-halo-color': COLORS.halo,
   'text-halo-width': 1.4,
-  'text-halo-blur': 0.5,
+  'text-halo-blur': 0,
 })
 
 export function buildStyle() {
   return {
     version: 8,
-    name: 'night-side',
+    name: 'stone',
     projection: { type: 'globe' },
     glyphs: `${OFM}/fonts/{fontstack}/{range}.pbf`,
     sources: {
@@ -81,14 +86,12 @@ export function buildStyle() {
         attribution: 'Sentinel-2 cloudless by <a href="https://s2maps.eu" target="_blank" rel="noreferrer">EOX</a> (modified Copernicus Sentinel data 2021)',
       },
     },
+    // No atmosphere: the globe's edge is a clean line against the ground, with no glow.
     sky: {
-      'sky-color': '#173a6e',
-      'horizon-color': '#2a5d9e',
-      'fog-color': '#0b1b3a',
-      'sky-horizon-blend': 0.6,
-      'horizon-fog-blend': 0.8,
-      'fog-ground-blend': 0.2,
-      'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 4, 0.9, 7, 0],
+      'sky-color': COLORS.page,
+      'horizon-color': COLORS.page,
+      'fog-color': COLORS.page,
+      'atmosphere-blend': 0,
     },
     layers: [
       { id: 'background', type: 'background', paint: { 'background-color': COLORS.land } },
@@ -108,23 +111,6 @@ export function buildStyle() {
         'source-layer': 'landcover',
         filter: ['==', ['get', 'class'], 'ice'],
         paint: { 'fill-color': COLORS.ice },
-      },
-      {
-        id: 'land-wood',
-        type: 'fill',
-        source: 'openmaptiles',
-        'source-layer': 'landcover',
-        minzoom: 3,
-        filter: ['==', ['get', 'class'], 'wood'],
-        paint: { 'fill-color': '#1a2a40', 'fill-opacity': 0.7 },
-      },
-      {
-        id: 'land-park',
-        type: 'fill',
-        source: 'openmaptiles',
-        'source-layer': 'park',
-        minzoom: 6,
-        paint: { 'fill-color': '#1b2c40', 'fill-opacity': 0.6 },
       },
       {
         id: 'water',
@@ -222,7 +208,7 @@ export function buildStyle() {
           'text-letter-spacing': 0.25,
           'text-max-width': 6,
         },
-        paint: labelPaint('#3f5a86'),
+        paint: labelPaint(COLORS.label),
       },
       {
         id: 'label-country',
@@ -240,7 +226,7 @@ export function buildStyle() {
           'text-letter-spacing': 0.08,
           'symbol-sort-key': ['get', 'rank'],
         },
-        paint: labelPaint(COLORS.labelDim),
+        paint: labelPaint(COLORS.label),
       },
       {
         id: 'label-state',
@@ -256,7 +242,7 @@ export function buildStyle() {
           'text-size': ['interpolate', ['linear'], ['zoom'], 5, 10, 8, 13],
           'text-max-width': 6,
         },
-        paint: labelPaint('#5d6a88'),
+        paint: labelPaint(COLORS.label),
       },
       {
         id: 'label-place',

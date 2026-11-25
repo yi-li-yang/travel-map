@@ -1,6 +1,6 @@
 # Travel Log
 
-![Travel Log preview: flight arcs from Lisbon draw in year by year on a night globe, beside the trip totals (invented trips)](docs/preview-anim.webp)
+![Travel Log preview: flight arcs from Lisbon draw in year by year on a dark stone globe, beside the trip totals (invented trips)](docs/preview-anim.webp)
 
 Personal travel history tracker and visualizer: flights and overland trips, for several people.
 
@@ -10,7 +10,7 @@ Inspired by [Fog of World](https://fogofworld.app/) and [Flighty](https://flight
 
 ## How It Works
 
-**Visualize** — flights render as glowing great-circle routes (fading from where you left to where you landed) and overland legs as dashed lines on an interactive night-side globe. Zoom from the whole planet down to city streets: the map is vector tiles (with a satellite layer), so detail keeps increasing as you zoom. Hover or click a route or a place and everything else steps back; a trip with several legs opens as a journey you can walk through leg by leg.
+**Visualize** — flights render as great-circle routes (fading in from where you left to where you landed) and overland legs as dashed lines on an interactive globe. Zoom from the whole planet down to city streets: the map is vector tiles (with a satellite layer), so detail keeps increasing as you zoom. Hover or click a route or a place and everything else steps back; a trip with several legs opens as a journey you can walk through leg by leg.
 
 **Explore** — a timeline of trips per year: drag it, play it, replay it, and see which years brought a first visit to a new country. The side panel lists every trip by year; hovering a row previews it on the globe.
 
@@ -57,7 +57,7 @@ npm run trips -- check                           # validates places.json and eve
 | Globe | MapLibre GL JS (globe projection) |
 | Map Data | OpenFreeMap vector tiles, EOX Sentinel-2 satellite |
 | Web App | React + Vite |
-| Styling | Tailwind CSS, Instrument Serif + Instrument Sans |
+| Styling | Tailwind CSS with [Yili's visual system](DESIGN.md) 1.0.0: Albert Sans, IBM Plex Mono, Tabler icons |
 | Email Parsing | Anthropic Claude API |
 | Hosting | GitHub Pages |
 

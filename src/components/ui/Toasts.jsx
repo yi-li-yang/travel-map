@@ -15,7 +15,7 @@ function Toast({ toast, onDismiss }) {
 
   return (
     <div
-      className={`panel pointer-events-auto rounded-xl px-4 py-2 text-[13px] ${leaving ? 'animate-sink' : 'animate-rise'}`}
+      className={`panel pointer-events-auto px-4 py-2 text-[14px] ${leaving ? 'animate-sink' : 'animate-rise'}`}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}

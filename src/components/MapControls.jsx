@@ -3,9 +3,10 @@ import { PlusIcon, MinusIcon, ResetViewIcon, LayersIcon, SpinIcon } from './ui/I
 
 export function MapControls({ onZoomIn, onZoomOut, onReset, basemap, onToggleBasemap, spinning, onToggleSpin, className = '', style }) {
   const sat = basemap === 'satellite'
-  const on = '!bg-white/[0.12] !text-route'
+  // A pressed toggle reads as pressed in shape as well as colour: a recessed square with an edge.
+  const on = '!bg-ground !text-ink ring-1 ring-inset ring-edge'
   return (
-    <div className={`panel flex flex-col rounded-2xl p-1 ${className}`} style={style} role="group" aria-label="Map controls">
+    <div className={`panel flex flex-col ${className}`} style={style} role="group" aria-label="Map controls">
       <Button variant="quiet" size="icon" onClick={onZoomIn} aria-label="Zoom in" title="Zoom in">
         <PlusIcon />
       </Button>
