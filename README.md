@@ -1,6 +1,6 @@
 # Travel Log
 
-![Travel Log preview](https://raw.githubusercontent.com/yi-li-yang/travel-map/main/thumb.gif)
+![Travel Log preview: flight arcs from Lisbon draw in year by year on a night globe, beside the trip totals (invented trips)](docs/preview-anim.webp)
 
 Personal travel history tracker and visualizer: flights and overland trips, for several people.
 
