@@ -5,7 +5,7 @@ const BUBBLE_HALF = 84
 
 /**
  * One bar per year, as tall as the number of trips. Hover or drag to read a year, click or drag to go there.
- * Planned years are striped. An amber dot marks a year with a first visit to a country. Under the bars, a line or
+ * Planned years are striped. A dot in the place colour marks a year with a first visit to a country. Under the bars, a line or
  * diamond marks life events (public/life/<id>.csv), listed in the readout.
  */
 export function Scrubber({ minYear, maxYear, perYear, firstCountries, life = [], year, onYear }) {
@@ -66,20 +66,23 @@ export function Scrubber({ minYear, maxYear, perYear, firstCountries, life = [],
     <div className="relative min-w-0">
       {peek && (
         <div
-          className="pointer-events-none absolute bottom-full z-10 mb-2 w-max max-w-[220px] -translate-x-1/2 rounded-lg border border-line px-2.5 py-1.5 text-[12px] shadow-panel"
-          style={{ left: peek.x, background: 'rgba(14,21,38,0.96)' }}
+          className="panel pointer-events-none absolute bottom-full z-10 mb-2 w-max max-w-[220px] -translate-x-1/2 px-3 py-2 text-[14px]"
+          style={{ left: peek.x }}
           role="presentation"
         >
           <div className="font-semibold">
-            {peek.year} <span className="font-normal text-dim">· {peekCount} {peekCount === 1 ? 'trip' : 'trips'}</span>
+            <span className="num">{peek.year}</span>{' '}
+            <span className="font-normal text-muted">
+              · <span className="num">{peekCount}</span> {peekCount === 1 ? 'trip' : 'trips'}
+            </span>
           </div>
-          {peekFirst && <div className="text-city">First time in {peekFirst.join(', ')}</div>}
+          {peekFirst && <div className="text-place">First time in {peekFirst.join(', ')}</div>}
           {peekLife.map((e) => (
-            <div key={e.label} className="text-dim">
+            <div key={e.label} className="text-muted">
               {e.label}
             </div>
           ))}
-          {peek.year > thisYear && <div className="text-city-soft">Planned</div>}
+          {peek.year > thisYear && <div className="text-muted">Planned</div>}
         </div>
       )}
 
@@ -97,7 +100,7 @@ export function Scrubber({ minYear, maxYear, perYear, firstCountries, life = [],
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onPointerLeave={(e) => !e.buttons && setPeek(null)}
-        className="relative flex h-11 cursor-pointer touch-none items-end gap-[3px] rounded-md"
+        className="relative flex h-11 cursor-pointer touch-none items-end gap-[3px]"
       >
         {years.map((y) => {
           const c = perYear[y] || 0
@@ -106,17 +109,17 @@ export function Scrubber({ minYear, maxYear, perYear, firstCountries, life = [],
           return (
             <div key={y} className="relative flex h-full flex-1 items-end">
               <div
-                className={`w-full rounded-[3px] transition-[background-color,filter] duration-300 ${reached ? 'bg-route' : 'bg-white/[0.16]'} ${
+                className={`w-full transition-[background-color,filter] duration-fast ease-out ${reached ? 'bg-flight' : 'bg-rule'} ${
                   y > thisYear ? 'hatch' : ''
-                } ${y === year ? 'shadow-glow' : ''} ${peek?.year === y ? 'brightness-125' : ''}`}
-                style={{ height: c ? `${h}%` : '3px', opacity: c ? (reached ? 1 : 0.9) : 0.35 }}
+                } ${peek?.year === y ? 'brightness-125' : ''}`}
+                style={{ height: c ? `${h}%` : '2px' }}
               />
             </div>
           )
         })}
         {hasPlanned && (
           <div
-            className="pointer-events-none absolute inset-y-0 w-0 border-l border-dashed border-white/30"
+            className="pointer-events-none absolute inset-y-0 w-0 border-l border-dashed border-edge"
             style={{ left: `calc(${((thisYear - minYear + 1) / count) * 100}% - 1.5px)` }}
             title="Today"
             aria-hidden="true"
@@ -127,8 +130,8 @@ export function Scrubber({ minYear, maxYear, perYear, firstCountries, life = [],
       <div className="mt-1 flex h-2 gap-[3px]" aria-hidden="true">
         {years.map((y) => (
           <div key={y} className="relative flex-1">
-            {y === year && <span className="absolute inset-x-0 top-0 h-[2px] rounded bg-city" />}
-            {firstCountries.has(y) && <span className="absolute left-1/2 top-[2px] h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-city/80" />}
+            {y === year && <span className="absolute inset-x-0 top-0 h-[2px] bg-ink" />}
+            {firstCountries.has(y) && <span className="absolute left-1/2 top-[3px] h-[5px] w-[5px] -translate-x-1/2 rounded-dot bg-place" />}
           </div>
         ))}
       </div>
@@ -140,14 +143,14 @@ export function Scrubber({ minYear, maxYear, perYear, firstCountries, life = [],
             if (a > maxYear || b < minYear) return null
             const left = ((a - minYear) / count) * 100
             return e.to > e.from ? (
-              <span key={e.label} className="absolute top-[3px] h-[2px] rounded bg-white/30" style={{ left: `calc(${left}% + 2px)`, width: `calc(${((b - a + 1) / count) * 100}% - 4px)` }} />
+              <span key={e.label} className="absolute top-[3px] h-[2px] bg-edge" style={{ left: `calc(${left}% + 2px)`, width: `calc(${((b - a + 1) / count) * 100}% - 4px)` }} />
             ) : (
-              <span key={e.label} className="absolute top-[1px] h-[6px] w-[6px] -translate-x-1/2 rotate-45 border border-white/55" style={{ left: `${left + 50 / count}%` }} />
+              <span key={e.label} className="absolute top-[1px] h-[6px] w-[6px] -translate-x-1/2 rotate-45 border border-muted" style={{ left: `${left + 50 / count}%` }} />
             )
           })}
         </div>
       )}
-      <div className="mt-1 flex justify-between text-[11px] text-dim">
+      <div className="num mt-1 flex justify-between text-[12px] text-muted">
         <span>{minYear}</span>
         <span>{maxYear}</span>
       </div>

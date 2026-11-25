@@ -21,7 +21,7 @@ export function addEffectLayers(map) {
     paint: {
       'circle-radius': ['get', 'r'],
       'circle-color': 'rgba(0,0,0,0)',
-      'circle-stroke-color': COLORS.cityLabel,
+      'circle-stroke-color': COLORS.focus,
       'circle-stroke-width': 1.5,
       'circle-stroke-opacity': ['get', 'o'],
     },
@@ -30,13 +30,13 @@ export function addEffectLayers(map) {
     id: 'effect-dot-halo',
     type: 'circle',
     source: DOT_SOURCE,
-    paint: { 'circle-radius': 9, 'circle-color': COLORS.route, 'circle-blur': 1, 'circle-opacity': 0.55 },
+    paint: { 'circle-radius': 5, 'circle-color': COLORS.page },
   })
   map.addLayer({
     id: 'effect-dot',
     type: 'circle',
     source: DOT_SOURCE,
-    paint: { 'circle-radius': 2.8, 'circle-color': '#ffffff' },
+    paint: { 'circle-radius': 3, 'circle-color': COLORS.hover },
   })
 }
 

@@ -13,8 +13,8 @@ export function Back({ onClick, label = 'Overview' }) {
 export function Stat({ value, label }) {
   return (
     <div>
-      <div className="display text-[32px] leading-none">{value}</div>
-      <div className="mt-1 text-[12.5px] text-dim">{label}</div>
+      <div className="num text-[25px] leading-none">{value}</div>
+      <div className="mt-2 text-[12px] text-muted">{label}</div>
     </div>
   )
 }

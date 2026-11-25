@@ -35,46 +35,46 @@ export function TripList({ trips, citiesDb, year, selected, kmByTrip, onSelectTr
   }
 
   if (!trips.length) {
-    return <p className="px-5 py-10 text-center text-[13px] text-dim">No trips yet.</p>
+    return <p className="px-6 py-12 text-[14px] text-muted">No trips yet.</p>
   }
 
   return (
     <div className="pb-6">
       {groups.map(([y, list]) => (
         <section key={y} ref={(el) => (sections.current[y] = el)} aria-label={`Trips in ${y}`}>
-          <h3 className="sticky top-0 z-10 bg-[rgba(14,21,38,0.92)] px-3 py-1 backdrop-blur">
+          <h3 className="sticky top-0 z-10 border-b border-rule bg-raised px-4 py-1">
             <button
               onClick={() => onYear(Number(y))}
               title={`Show the globe as of ${y}`}
-              className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[12px] font-semibold text-dim transition-colors hover:bg-white/[0.06] hover:text-fg"
+              className="flex h-8 w-full items-center gap-3 px-2 text-left text-[14px] text-muted transition-colors duration-fast ease-out hover:bg-surface hover:text-ink"
             >
-              <span className={Number(y) === year ? 'text-city' : ''}>{y}</span>
-              <span className="font-normal">{list.length}</span>
-              {Number(y) > thisYear && <span className="font-normal text-city-soft">Planned</span>}
+              <span className={`num font-medium ${Number(y) === year ? 'text-ink underline decoration-2 underline-offset-4' : ''}`}>{y}</span>
+              <span className="num text-[12px]">{list.length}</span>
+              {Number(y) > thisYear && <span className="font-normal text-muted">Planned</span>}
             </button>
           </h3>
-          <ul className="px-3">
+          <ul className="px-4">
             {list.map((t) => (
               <li key={t.id} className={`transition-opacity ${Number(t.year) > year ? 'opacity-45' : ''}`}>
                 <button
                   onClick={() => onSelectTrip(t)}
                   {...previewProps(onPreview, { routeKeys: tripRouteKeys(t) })}
-                  className={`flex w-full items-start gap-3 rounded-xl px-2 py-2.5 text-left transition-colors ${
-                    isSelected(t) ? 'bg-white/[0.09]' : 'hover:bg-white/[0.05]'
+                  className={`flex w-full items-start gap-3 px-2 py-3 text-left transition-colors duration-fast ease-out ${
+                    isSelected(t) ? 'bg-ground ring-1 ring-inset ring-edge' : 'hover:bg-surface'
                   }`}
                   aria-label={`Show ${routeText(t, citiesDb)} on the globe`}
                   aria-pressed={isSelected(t)}
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[13.5px] leading-snug">
+                    <span className="block text-[14px] leading-snug">
                       <RouteChain trip={t} citiesDb={citiesDb} />
                     </span>
-                    <span className="mt-0.5 block truncate text-[11.5px] text-dim">
+                    <span className="num mt-1 block truncate text-[12px] text-muted">
                       {t.route}
-                      {t.note && <span className="text-fg/70"> · {t.note}</span>}
+                      {t.note && <span className="font-sans text-ink"> · {t.note}</span>}
                     </span>
                   </span>
-                  <span className="shrink-0 pt-0.5 text-[11.5px] text-dim">{formatKm(kmByTrip.get(t.id) || 0)} km</span>
+                  <span className="num shrink-0 pt-1 text-[12px] text-muted">{formatKm(kmByTrip.get(t.id) || 0)} km</span>
                 </button>
               </li>
             ))}

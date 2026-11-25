@@ -6,11 +6,11 @@ export function RouteChain({ trip, citiesDb, highlight }) {
   return trip.stops.map((s, i) => (
     <span key={i}>
       {i > 0 && (
-        <span className="text-dim" aria-hidden="true">
+        <span className="text-muted" aria-hidden="true">
           {trip.legs[i - 1].mode === GROUND ? ' ⇢ ' : ' → '}
         </span>
       )}
-      <span className={s.code === highlight ? 'text-city' : s.via ? 'text-dim' : ''}>{name(s.code)}</span>
+      <span className={s.code === highlight ? 'text-place' : s.via ? 'text-muted' : ''}>{name(s.code)}</span>
     </span>
   ))
 }

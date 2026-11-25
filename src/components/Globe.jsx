@@ -160,8 +160,8 @@ export const Globe = forwardRef(function Globe(
     const coarse = window.matchMedia?.('(pointer: coarse)').matches
     const pick = (point) => {
       const area = coarse ? [[point.x - TOUCH_REACH, point.y - TOUCH_REACH], [point.x + TOUCH_REACH, point.y + TOUCH_REACH]] : point
-      const hits = map.queryRenderedFeatures(area, { layers: ['cities-halo', 'arcs-hit'] })
-      const cities = hits.filter((f) => f.layer.id === 'cities-halo')
+      const hits = map.queryRenderedFeatures(area, { layers: ['cities-hit', 'arcs-hit'] })
+      const cities = hits.filter((f) => f.layer.id === 'cities-hit')
       if (cities.length) {
         const dist = (f) => {
           const p = map.project(f.geometry.coordinates)

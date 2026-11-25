@@ -47,39 +47,39 @@ export function cityLayers() {
   const scale = (a, b) => ['interpolate', ['linear'], ['zoom'], 0, a, 8, b]
   return [
     {
-      // A soft glow on places reached for the first time in the year being shown.
+      // A ring round places reached for the first time in the year being shown.
       id: 'cities-new',
       type: 'circle',
       source: CITY_SOURCE,
       filter: NO_YEAR,
       paint: {
-        'circle-radius': scale(16, 28),
-        'circle-color': COLORS.city,
-        'circle-blur': 0.9,
-        'circle-opacity': 0.5,
+        'circle-radius': scale(8, 13),
+        'circle-color': 'rgba(0,0,0,0)',
+        'circle-stroke-color': COLORS.place,
+        'circle-stroke-width': 1.5,
       },
     },
     {
-      id: 'cities-halo',
+      // Invisible, wider than the dot: what the pointer picks.
+      id: 'cities-hit',
       type: 'circle',
       source: CITY_SOURCE,
       paint: {
         'circle-radius': scale(['case', isHub, 4, ['+', 7, ['*', 1.1, visits]]], ['case', isHub, 8, ['+', 12, ['*', 2, visits]]]),
-        'circle-color': COLORS.city,
-        'circle-blur': 1,
-        'circle-opacity': ['case', isHub, 0, 0.22],
+        'circle-opacity': 0,
       },
     },
     {
+      // A place is a solid dot, larger the more often it was reached, with a ground-coloured edge
+      // so it stays clear of the lines under it.
       id: 'cities-core',
       type: 'circle',
       source: CITY_SOURCE,
       paint: {
-        'circle-radius': scale(['case', isHub, 1.8, ['+', 2.4, ['*', 0.16, visits]]], ['case', isHub, 3.2, ['+', 4, ['*', 0.3, visits]]]),
-        'circle-color': ['case', isHub, COLORS.hub, COLORS.city],
-        'circle-stroke-color': ['case', isHub, 'rgba(0,0,0,0)', '#fff3dc'],
-        'circle-stroke-width': ['case', isHub, 0, 0.6],
-        'circle-opacity': ['case', isHub, 0.85, 1],
+        'circle-radius': scale(['case', isHub, 1.8, ['+', 2.6, ['*', 0.18, visits]]], ['case', isHub, 3.2, ['+', 4.2, ['*', 0.32, visits]]]),
+        'circle-color': ['case', isHub, COLORS.hub, COLORS.place],
+        'circle-stroke-color': COLORS.page,
+        'circle-stroke-width': ['case', isHub, 0, 1],
       },
     },
     {
@@ -90,12 +90,12 @@ export function cityLayers() {
       paint: {
         'circle-radius': scale(9, 14),
         'circle-color': 'rgba(0,0,0,0)',
-        'circle-stroke-color': COLORS.cityLabel,
-        'circle-stroke-width': 1.2,
-        'circle-stroke-opacity': 0.9,
+        'circle-stroke-color': COLORS.hover,
+        'circle-stroke-width': 1.5,
       },
     },
     {
+      // The one selection, in the accent.
       id: 'cities-selected',
       type: 'circle',
       source: CITY_SOURCE,
@@ -103,8 +103,8 @@ export function cityLayers() {
       paint: {
         'circle-radius': scale(10, 16),
         'circle-color': 'rgba(0,0,0,0)',
-        'circle-stroke-color': '#ffffff',
-        'circle-stroke-width': 1.5,
+        'circle-stroke-color': COLORS.focus,
+        'circle-stroke-width': 2,
       },
     },
     {
@@ -116,17 +116,17 @@ export function cityLayers() {
       layout: {
         'text-field': ['get', 'city'],
         'text-font': ['Noto Sans Regular'],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 1.5, 10.5, 6, 13],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 1.5, 11, 6, 13],
         'text-anchor': 'top',
         'text-offset': [0, 0.9],
         'text-max-width': 8,
         'symbol-sort-key': ['-', 0, ['get', 'visits']],
       },
       paint: {
-        'text-color': COLORS.cityLabel,
+        'text-color': COLORS.placeLabel,
         'text-halo-color': COLORS.halo,
         'text-halo-width': 1.6,
-        'text-halo-blur': 0.5,
+        'text-halo-blur': 0,
       },
     },
   ]
@@ -144,7 +144,7 @@ export function setCityFocus(map, { selectedCode, hoverCode }) {
   map.setFilter('cities-hover', ['==', ['get', 'code'], hoverCode && hoverCode !== selectedCode ? hoverCode : ''])
 }
 
-/** Glow the places first reached in `year` (connections left out). */
+/** Ring the places first reached in `year` (connections left out). */
 export function setFirstVisitYear(map, year) {
   map.setFilter('cities-new', ['all', ['==', ['get', 'first'], year], ['==', ['get', 'hub'], 0]])
 }

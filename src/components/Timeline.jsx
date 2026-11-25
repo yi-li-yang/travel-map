@@ -5,15 +5,15 @@ import { PlayIcon, PauseIcon, ReplayIcon } from './ui/Icons.jsx'
 const SPEEDS = [1, 2, 4]
 const thisYear = new Date().getFullYear()
 
-// Year as rolling digits: each digit slides to its value.
+// Year as rolling digits in the monospace face: each digit slides to its value, and none shifts.
 function RollingYear({ year }) {
   const digits = String(year).padStart(4, ' ').split('')
   return (
-    <div className="display flex text-[34px] leading-none text-fg sm:text-[44px] md:text-[52px]" aria-hidden="true">
+    <div className="num flex text-[25px] font-medium leading-none text-ink md:text-[31px]" aria-hidden="true">
       {digits.map((d, i) => (
-        <span key={i} className="relative inline-block h-[1em] w-[0.56em] overflow-hidden">
+        <span key={i} className="relative inline-block h-[1em] w-[0.6em] overflow-hidden">
           <span
-            className="absolute left-0 top-0 flex flex-col transition-transform duration-500 ease-[cubic-bezier(.2,.8,.2,1)]"
+            className="absolute left-0 top-0 flex flex-col transition-transform duration-panel ease-out"
             style={{ transform: `translateY(${d === ' ' ? 0 : -Number(d)}em)` }}
           >
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
@@ -36,9 +36,9 @@ export function Timeline({ minYear, maxYear, perYear, firstCountries, life = [],
   const action = playing ? 'Pause timeline' : finished ? 'Replay timeline' : 'Play timeline'
 
   return (
-    <section ref={dockRef} className={`panel rounded-panel p-3 md:px-4 ${className}`} style={style} aria-label="Timeline">
+    <section ref={dockRef} className={`panel p-3 md:px-4 ${className}`} style={style} aria-label="Timeline">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 md:flex-nowrap md:gap-4">
-        <Button variant="primary" size="icon" onClick={onToggle} aria-label={action} title={action} className="!h-12 !w-12 !rounded-full">
+        <Button variant="primary" size="icon" onClick={onToggle} aria-label={action} title={action} className="!h-12 !w-12">
           {playing ? <PauseIcon width={22} height={22} /> : finished ? <ReplayIcon width={22} height={22} /> : <PlayIcon width={22} height={22} />}
         </Button>
 
@@ -47,12 +47,12 @@ export function Timeline({ minYear, maxYear, perYear, firstCountries, life = [],
           <span className="sr-only" aria-live="polite">
             {year}
           </span>
-          {planned && <span className="absolute -top-3 left-0 whitespace-nowrap text-[11px] text-city-soft">Planned trips</span>}
+          {planned && <span className="absolute -top-4 left-0 whitespace-nowrap text-[12px] text-muted">Planned trips</span>}
         </div>
 
         <button
           onClick={nextSpeed}
-          className="ml-auto h-9 min-w-[44px] rounded-lg px-2 text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.07] hover:text-fg md:order-last md:ml-0"
+          className="num ml-auto h-9 min-w-[44px] px-2 text-[14px] text-muted transition-colors duration-fast ease-out hover:bg-surface hover:text-ink md:order-last md:ml-0"
           aria-label={`Playback speed ${speed}×. Change speed`}
         >
           {speed}×
