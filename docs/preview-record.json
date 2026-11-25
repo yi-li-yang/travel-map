@@ -1,0 +1,17 @@
+{
+  "_edit": "DERIVED — written by auto-generate-preview-image capture. Never edit; the next capture rewrites it.",
+  "commit": "f3660a21f21506242f0ea00681cd2ff595d86a24",
+  "capturedAt": "2026-11-25T16:24:42.564Z",
+  "url": "https://yi-li-yang.github.io/travel-map/",
+  "tool": "0.1.0",
+  "image": {
+    "file": "docs/preview.webp",
+    "sha256": "faca7ab97936d95ed212fb068e9e696727030c1ccc6d54b4e9a831df07f113fc",
+    "bytes": 55686
+  },
+  "anim": {
+    "file": "docs/preview-anim.webp",
+    "sha256": "d47600b0f9926d9f6b97dd136c386f28c07af0d90a6c8f999c1accec3f6661ba",
+    "bytes": 521274
+  }
+}

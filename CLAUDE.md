@@ -192,7 +192,9 @@ Known email senders: Trip.com `en_flight_noreply@trip.com`, 携程 `ia_rsv@trip.
 
 ### Phase 4: Deploy & Polish (mostly done)
 
-GitHub Actions deploy ✅, responsive layout ✅, loading states ✅. Open: share view as PNG, PWA manifest, refresh `thumb.gif` for the README.
+GitHub Actions deploy ✅, responsive layout ✅, loading states ✅, README preview ✅. Open: share view as PNG, PWA manifest.
+
+The README preview (`docs/preview.webp`, `docs/preview-anim.webp`, `docs/preview-record.json`) is made by [auto-generate-preview-image](https://github.com/yi-li-yang/auto-generate-preview-image) from `preview.json`, with a fictional traveller's trips in `docs/preview/fixtures/`. Never edit those files by hand, and never put real trips in the fixtures.
 
 ### Phase 5: Ideas still open
 

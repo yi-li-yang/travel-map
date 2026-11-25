@@ -1,0 +1,35 @@
+{
+  "_comment": "How auto-generate-preview-image (github.com/yi-li-yang/auto-generate-preview-image) captures this app for the README and the homepage.",
+  "url": "https://yi-li-yang.github.io/travel-map/",
+  "data": "invented",
+  "dataNote": "A fictional traveller: trips, life events and the update stamp come from docs/preview/fixtures, never from public/trips or public/life. The person switcher is hidden, because its names are real.",
+  "watch": ["src/", "index.html"],
+  "reducedMotion": "reduce",
+  "network": {
+    "fixtures": {
+      "**/trips/*.csv": "docs/preview/fixtures/trips.csv",
+      "**/trips/updated.json": "docs/preview/fixtures/updated.json",
+      "**/life/*.csv": "docs/preview/fixtures/life.csv"
+    }
+  },
+  "hide": ["[role=group][aria-label=\"Whose trips\"]"],
+  "timeoutMs": 90000,
+  "steps": [
+    { "waitFor": ".z-40[role=status][aria-hidden=true]" },
+    { "wait": 1200 }
+  ],
+  "anim": {
+    "reducedMotion": "no-preference",
+    "steps": [
+      { "waitFor": "role=button[name=\"Replay timeline\"]" },
+      { "click": "role=button[name=\"Stop turning the globe\"]" },
+      { "click": "role=button[name=\"Reset view\"]" },
+      { "click": "role=button[name=\"Playback speed 1×. Change speed\"]" },
+      { "wait": 1500 },
+      { "recordStart": { "fps": 10 } },
+      { "click": "role=button[name=\"Replay timeline\"]" },
+      { "wait": 7000 },
+      { "recordStop": {} }
+    ]
+  }
+}
